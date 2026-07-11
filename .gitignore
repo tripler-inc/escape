@@ -1,0 +1,6 @@
+# Compiled output
+out/
+
+# OS artefacts
+.DS_Store
+Thumbs.db
