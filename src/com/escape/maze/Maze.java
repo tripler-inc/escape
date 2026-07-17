@@ -2,7 +2,7 @@ package com.escape.maze;
 
 public class Maze {
 
-    public static final int SIZE = 26;
+    public static final int SIZE = 27;
 
     private final Cell[][] grid;
 

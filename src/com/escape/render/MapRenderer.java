@@ -68,7 +68,7 @@ public class MapRenderer {
             dotDiam, dotDiam);
 
         // ── Direction arrow ───────────────────────────────────────────
-        float arrowLen = cellSize * 1.8f;
+        float arrowLen = cellSize * 1.001f;
         float arrowEndX = playerScreenX + (float) Math.cos(player.angle) * arrowLen;
         float arrowEndY = playerScreenY + (float) Math.sin(player.angle) * arrowLen;
 
@@ -82,6 +82,7 @@ public class MapRenderer {
         // ── Floor label (top-left) ────────────────────────────────────
         g.setFont(new Font("SansSerif", Font.BOLD, 16));
         g.setColor(Color.WHITE);
-        g.drawString("Floor " + (player.floor + 1) + " of 3", 10, 24);
+//        g.drawString("Floor " + (player.floor + 1) + " of 3", 10, 24);
+        g.drawString("Floor " + (player.floor + 1), 10, 24);
     }
 }

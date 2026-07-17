@@ -4,10 +4,11 @@ import com.escape.maze.Cell;
 import com.escape.maze.Maze;
 import com.escape.maze.MazeGenerator;
 import com.escape.player.Player;
+import com.escape.audio.SoundPlayer;
 
 import java.awt.Point;
 import java.util.ArrayList;
-import java.util.Arrays;
+//import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -18,57 +19,56 @@ public class World {
 
     public enum GameState { PLAYING, WIN }
 
-    private static final int NUM_FLOORS      = 3;
-    private static final int COINS_PER_FLOOR = 5;
-    private static final int[] ODD = {1,3,5,7,9,11,13,15,17,19,21,23};
+    private static final int NUM_FLOORS      = 5;
+    private static final int COINS_PER_FLOOR = 10;
+    private static final int ROWS = 25;
+    private static final int COLS = 25;
+    private static final int[] ODD = {1,3,5,7,9,11,13,15,17,19,21,23,25};
 
     // ---------------------------------------------------------------
-    private final Floor[]  floors;
-    private final Player   player;
+    private final Floor[]   floors;
+    private final Player    player;
     private       GameState gameState;
 
-    private final int startCol;
-    private final int exitCol;
-    private final Point ladderA;   // connects floor 0 <-> 1 at this grid cell
-    private final Point ladderB;   // connects floor 1 <-> 2 at this grid cell
+    private final int     startCol;
+    private final int     exitCol;
+    private final Point[] ladders;   // connects floor 0 <-> 1 at this grid cell
 
     private int lockedMessageTicks = 0;
     public  static final int LOCKED_MSG_DURATION = 120; // 2 s @ 60 fps
 
+    public final SoundPlayer soundPlayer = new SoundPlayer();
+
     // ---------------------------------------------------------------
     public World() {
         Random rng = new Random();
-        floors = new Floor[NUM_FLOORS];
+        floors  = new Floor[NUM_FLOORS];
+        ladders = new Point[NUM_FLOORS - 1];
 
-        // ── Phase 1: generate all three mazes ──────────────────────
+        // ── Phase 1: generate all floor mazes ──────────────────────
         for (int i = 0; i < NUM_FLOORS; i++) {
             floors[i] = new Floor(MazeGenerator.generate(rng), i);
         }
 
         // ── Start position: floor 0, row 23, random odd col ─────────
         startCol = ODD[rng.nextInt(ODD.length)];
-        floors[0].getMaze().setCell(23, startCol, Cell.PASSAGE);
+        floors[0].getMaze().setCell(ROWS, startCol, Cell.PASSAGE);
 
-        // ── Exit position: floor 2, row 0 (north wall), random odd col
-        // Guarantee cell (1, exitCol) on floor 2 is a passage so the
+        // ── Exit position: top floor, row 0 (north wall), random odd col
+        // Guarantee cell (1, exitCol) on top floor is a passage so the
         // player can approach the door.
         exitCol = ODD[rng.nextInt(ODD.length)];
-        floors[2].getMaze().setCell(1, exitCol, Cell.PASSAGE);
-        floors[2].placeItem(0, exitCol, ItemType.EXIT);
+        floors[NUM_FLOORS-1].getMaze().setCell(1, exitCol, Cell.PASSAGE);
+        floors[NUM_FLOORS-1].placeItem(0, exitCol, ItemType.EXIT);
 
         // ── Phase 2: place ladders ───────────────────────────────────
-        Set<Point> exclude0 = new HashSet<>();
-        exclude0.add(new Point(startCol, 23)); // avoid start cell
-        ladderA = pickRoomCell(rng, floors[0].getMaze(), exclude0);
-        floors[0].placeItem(ladderA.y, ladderA.x, ItemType.LADDER_UP);
-        floors[1].placeItem(ladderA.y, ladderA.x, ItemType.HOLE_DOWN);
-
-        Set<Point> exclude1 = new HashSet<>();
-        exclude1.add(ladderA);                         // can't reuse same position
-        exclude1.add(new Point(exitCol, 1));            // keep exit approach clear
-        ladderB = pickRoomCell(rng, floors[1].getMaze(), exclude1);
-        floors[1].placeItem(ladderB.y, ladderB.x, ItemType.LADDER_UP);
-        floors[2].placeItem(ladderB.y, ladderB.x, ItemType.HOLE_DOWN);
+        for (int i = 0; i < NUM_FLOORS - 1; i++) {
+            Set<Point> exclude = new HashSet<>();
+            exclude.add(new Point(startCol, ROWS)); // avoid start cell
+            ladders[i] = pickRoomCell(rng, floors[i].getMaze(), exclude);
+            floors[i].placeItem(ladders[i].y, ladders[i].x, ItemType.LADDER_UP);
+            floors[i+1].placeItem(ladders[i].y, ladders[i].x, ItemType.HOLE_DOWN);
+        }
 
         // ── Phase 3: place 5 coins per floor ────────────────────────
         for (int f = 0; f < NUM_FLOORS; f++) {
@@ -84,7 +84,10 @@ public class World {
         }
 
         // ── Phase 4: place key (any floor, avoiding start/ladders/coins)
-        List<Integer> floorOrder = new ArrayList<>(Arrays.asList(0, 1, 2));
+        List<Integer> floorOrder = new ArrayList<>();
+        for (int i = 0; i < NUM_FLOORS; i++) {
+            floorOrder.add(i);
+        }
         Collections.shuffle(floorOrder, rng);
         outer:
         for (int f : floorOrder) {
@@ -98,7 +101,7 @@ public class World {
         }
 
         // ── Create player ────────────────────────────────────────────
-        player    = new Player(startCol + 0.5f, 23.5f, 0);
+        player    = new Player(startCol + 0.5f, ROWS + 0.5f, 0);
         gameState = GameState.PLAYING;
     }
 
@@ -106,9 +109,9 @@ public class World {
 
     /** Returns true for cells that should never hold a coin/key. */
     private boolean isReserved(Point p, int floor) {
-        if (p.equals(ladderA) || p.equals(ladderB)) return true;
-        if (floor == 0 && p.x == startCol && p.y == 23) return true;
-        if (floor == 2 && p.x == exitCol  && p.y == 1)  return true;
+        if (floor < NUM_FLOORS - 1 && p.equals(ladders[floor])) return true;
+        if (floor == 0 && p.x == startCol && p.y == ROWS) return true;
+        if (floor == NUM_FLOORS - 1 && p.x == exitCol  && p.y == 1)  return true;
         return false;
     }
 
@@ -122,8 +125,8 @@ public class World {
 
     private List<Point> shuffledRoomCells(Random rng, Maze maze) {
         List<Point> list = new ArrayList<>();
-        for (int r = 1; r <= 23; r += 2) {
-            for (int c = 1; c <= 23; c += 2) {
+        for (int r = 1; r <= ROWS; r += 2) {
+            for (int c = 1; c <= COLS; c += 2) {
                 if (maze.isPassage(r, c)) {
                     list.add(new Point(c, r)); // x=col, y=row
                 }
@@ -135,12 +138,12 @@ public class World {
 
     // ── public accessors ────────────────────────────────────────────
 
-    public Floor     getFloor(int index)   { return floors[index]; }
-    public Floor     getCurrentFloor()     { return floors[player.floor]; }
-    public Player    getPlayer()           { return player; }
-    public GameState getGameState()        { return gameState; }
-    public int       getExitCol()          { return exitCol; }
-    public int       getStartCol()         { return startCol; }
+    public Floor       getFloor(int index)  { return floors[index]; }
+    public Floor       getCurrentFloor()    { return floors[player.floor]; }
+    public Player      getPlayer()          { return player; }
+    public GameState   getGameState()       { return gameState; }
+    public int         getExitCol()         { return exitCol; }
+    public int         getStartCol()        { return startCol; }
 
     public boolean isLockedMessageVisible() { return lockedMessageTicks > 0; }
     public void    tickLockedMessage()      { if (lockedMessageTicks > 0) lockedMessageTicks--; }
@@ -164,7 +167,7 @@ public class World {
         int newCol = Math.max(0, Math.min(Maze.SIZE - 1, (int) newPx));
 
         // Exit cell intercept (floor 2, row 0)
-        if (player.floor == 2 && newRow == 0 && newCol == exitCol) {
+        if (player.floor == (NUM_FLOORS - 1) && newRow == 0 && newCol == exitCol) {
             if (player.hasKey) {
                 gameState = GameState.WIN;
                 return true;
@@ -194,9 +197,11 @@ public class World {
         if (item == ItemType.COIN) {
             player.coins++;
             f.removeItem(row, col);
+            soundPlayer.playCoinClink();
         } else if (item == ItemType.KEY) {
             player.hasKey = true;
             f.removeItem(row, col);
+            soundPlayer.playKeyPickup();
         }
     }
 
@@ -208,6 +213,7 @@ public class World {
         if (getCurrentFloor().getItemAt(row, col) == ItemType.LADDER_UP
                 && player.floor < NUM_FLOORS - 1) {
             player.floor++;
+            soundPlayer.playLadderUp();
             player.px = col + 0.5f;
             player.py = row + 0.5f;
             return true;
@@ -223,6 +229,7 @@ public class World {
         if (getCurrentFloor().getItemAt(row, col) == ItemType.HOLE_DOWN
                 && player.floor > 0) {
             player.floor--;
+            soundPlayer.playLadderDown();
             player.px = col + 0.5f;
             player.py = row + 0.5f;
             return true;

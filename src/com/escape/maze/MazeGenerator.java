@@ -9,12 +9,12 @@ import java.util.Stack;
 public class MazeGenerator {
 
     /**
-     * Generates a perfect maze in a 26x26 grid using depth-first search
+     * Generates a perfect maze in a 27x27 grid using depth-first search
      * with stack-based backtracking.
      *
      * Layout:
-     *   - Outer boundary (row 0, row 25, col 0, col 25) remains WALL.
-     *   - Room cells are at (r,c) where r,c are both odd in [1..23] → 12x12 = 144 rooms.
+     *   - Outer boundary (row 0, row 26, col 0, col 26) remains WALL.
+     *   - Room cells are at (r,c) where r,c are both odd in [1..25] → 13x13 = 169 rooms.
      *   - DFS carves the intermediate wall cell between two adjacent rooms.
      */
     public static Maze generate(Random rng) {
@@ -23,7 +23,11 @@ public class MazeGenerator {
         boolean[][] visited = new boolean[Maze.SIZE][Maze.SIZE];
 
         // Pick a random starting room cell
-        int[] oddVals = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23};
+        int[] oddVals = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25};
+//        int[] oddVals = new int[COLS / 2 + 1];
+//        for (int i = 0; i < 13; i++) {
+//            oddVals[i] = 1 + 2 * i;
+//        }
         int startR = oddVals[rng.nextInt(oddVals.length)];
         int startC = oddVals[rng.nextInt(oddVals.length)];
 
@@ -46,7 +50,7 @@ public class MazeGenerator {
             for (int[] d : dirs) {
                 int nr = r + d[0];
                 int nc = c + d[1];
-                if (nr >= 1 && nr <= 23 && nc >= 1 && nc <= 23 && !visited[nr][nc]) {
+                if (nr >= 1 && nr <= Maze.SIZE-2 && nc >= 1 && nc <= Maze.SIZE-2 && !visited[nr][nc]) {
                     neighbours.add(new int[]{nr, nc});
                 }
             }

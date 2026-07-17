@@ -38,6 +38,8 @@ public class FirstPersonRenderer {
     private static final int BASE_NS = 120; // x-side hit  (N/S walls)
     private static final int BASE_EW = 160; // y-side hit  (E/W walls)
 
+    private static final int NUM_FLOORS       = 5;
+
     /** Per-column wall distance, populated during the DDA pass. */
     private double[] zBuffer = new double[0];
 
@@ -65,9 +67,9 @@ public class FirstPersonRenderer {
         // ── Raycast one ray per screen column ─────────────────────────
         for (int x = 0; x < width; x++) {
 
-            double cameraX  = 2.0 * x / width - 1.0; // [-1 .. 1]
-            double rayDirX  = dirX + planeX * cameraX;
-            double rayDirY  = dirY + planeY * cameraX;
+            double cameraX = 2.0 * x / width - 1.0; // [-1 .. 1]
+            double rayDirX = dirX + planeX * cameraX;
+            double rayDirY = dirY + planeY * cameraX;
 
             int mapX = (int) px;
             int mapY = (int) py;
@@ -80,17 +82,17 @@ public class FirstPersonRenderer {
             double sideDistX, sideDistY;
 
             if (rayDirX < 0) {
-                stepX    = -1;
+                stepX     = -1;
                 sideDistX = (px - mapX) * deltaDistX;
             } else {
-                stepX    =  1;
+                stepX     =  1;
                 sideDistX = (mapX + 1.0 - px) * deltaDistX;
             }
             if (rayDirY < 0) {
-                stepY    = -1;
+                stepY     = -1;
                 sideDistY = (py - mapY) * deltaDistY;
             } else {
-                stepY    =  1;
+                stepY     =  1;
                 sideDistY = (mapY + 1.0 - py) * deltaDistY;
             }
 
@@ -114,7 +116,7 @@ public class FirstPersonRenderer {
 
                 if (maze.isWall(mapY, mapX)) {
                     // Check whether this is the exit door
-                    if (player.floor == 2 && mapY == 0 && mapX == world.getExitCol()) {
+                    if (player.floor == NUM_FLOORS-1 && mapY == 0 && mapX == world.getExitCol()) {
                         isExit = true;
                     }
                     break;
@@ -221,7 +223,8 @@ public class FirstPersonRenderer {
         int halfH = Math.max(2, (int)(height / transformY / 10));
         int halfW = halfH;
 
-        double coinWorldH = 0.62;
+//        double coinWorldH = 0.62;
+        double coinWorldH = 0.5;
         int centerY = (int)(height / 2.0 + (0.5 - coinWorldH) * height / transformY);
 
         int startX = Math.max(0,         screenX - halfW);

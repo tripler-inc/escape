@@ -28,11 +28,15 @@ import java.util.Set;
  */
 public class GamePanel extends JPanel {
 
-    public  static final int WIDTH  = 900;
-    public  static final int HEIGHT = 600;
+    public  static final int WIDTH  = 1350;
+    public  static final int HEIGHT = 900;
 
-    private static final float MOVE_SPEED = 0.05f;
-    private static final float ROT_SPEED  = 0.035f; // radians per tick
+    private static final float MOVE_SPEED = 0.008f;
+    private static final float ROT_SPEED  = 0.01f; // radians per tick
+    private static final float MAX_MOVE_SPEED = 0.04f;
+    private static final float MAX_ROT_SPEED  = 0.05f; // radians per tick
+    private float moveSpeed = MOVE_SPEED; // Set to default
+    private float rotSpeed  = ROT_SPEED;  // Set to default
 
     // ── Game objects ──────────────────────────────────────────────────
     private final World world;
@@ -62,8 +66,14 @@ public class GamePanel extends JPanel {
         audioPlayer = new AudioPlayer();
 
         addKeyListener(new KeyAdapter() {
-            @Override public void keyPressed(KeyEvent e)  { onKeyPressed(e);  }
-            @Override public void keyReleased(KeyEvent e) { heldKeys.remove(e.getKeyCode()); }
+            @Override public void keyPressed(KeyEvent e)  {
+                onKeyPressed(e);
+            }
+            @Override public void keyReleased(KeyEvent e) {
+                heldKeys.remove(e.getKeyCode());
+                rotSpeed = ROT_SPEED;
+                moveSpeed = MOVE_SPEED;
+            } // reset rotation and move speed
         });
 
         new Timer(16, e -> tick()).start(); // ~62 fps
@@ -74,7 +84,10 @@ public class GamePanel extends JPanel {
     private void tick() {
         if (world.getGameState() == World.GameState.PLAYING) {
             handleHeldKeys();
-            world.collectItems();
+            // only collect items when in first-person mode
+            if (renderMode == RenderMode.FIRST_PERSON) {
+                world.collectItems();
+            }
             world.tickLockedMessage();
         } else if (world.getGameState() == World.GameState.WIN && !winStarted) {
             winStarted = true;
@@ -92,16 +105,28 @@ public class GamePanel extends JPanel {
         float dirY = (float) Math.sin(player.angle);
 
         if (heldKeys.contains(KeyEvent.VK_UP)) {
-            world.tryMove(dirX * MOVE_SPEED, dirY * MOVE_SPEED);
+            world.tryMove(dirX * moveSpeed, dirY * moveSpeed);
+            if (moveSpeed < MAX_MOVE_SPEED) {
+                moveSpeed += 0.002f; // gradually increase move speed
+            }
         }
         if (heldKeys.contains(KeyEvent.VK_DOWN)) {
-            world.tryMove(-dirX * MOVE_SPEED, -dirY * MOVE_SPEED);
+            world.tryMove(-dirX * moveSpeed, -dirY * moveSpeed);
+            if (moveSpeed < MAX_MOVE_SPEED) {
+                moveSpeed += 0.002f; // gradually increase move speed
+            }
         }
         if (heldKeys.contains(KeyEvent.VK_LEFT)) {
-            player.angle -= ROT_SPEED;
+            player.angle -= rotSpeed;
+            if (rotSpeed < MAX_ROT_SPEED) {
+                rotSpeed += 0.002f; // gradually increase rotation speed
+            }
         }
         if (heldKeys.contains(KeyEvent.VK_RIGHT)) {
-            player.angle += ROT_SPEED;
+            player.angle += rotSpeed;
+            if (rotSpeed < MAX_ROT_SPEED) {
+                rotSpeed += 0.002f; // gradually increase rotation speed
+            }
         }
     }
 

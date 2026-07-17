@@ -88,8 +88,8 @@ public class ConfettiAnimation {
         g.setFont(new Font("SansSerif", Font.BOLD, 54));
         FontMetrics fm = g.getFontMetrics();
         int tw = fm.stringWidth(text);
-        int tx = (screenWidth  - tw) / 2;
-        int ty = screenHeight  / 2 + 18;
+        int tx = (screenWidth - tw) / 2;
+        int ty = screenHeight / 2 + 18;
 
         // Semi-transparent backing
         g.setColor(new Color(0, 0, 0, 190));
