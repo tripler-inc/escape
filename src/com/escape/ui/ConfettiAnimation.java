@@ -1,7 +1,8 @@
 package com.escape.ui;
 
+import com.escape.Config;
+
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
@@ -13,21 +14,12 @@ import java.util.Random;
  */
 public class ConfettiAnimation {
 
-    private static final int NUM_PARTICLES = 150;
+    private static final int NUM_PARTICLES = Config.CONFETTI.numParticles;
 
     private final float[] x, y, vx, vy, angle, angVel;
     private final Color[] colors;
     private final int[]   sizes;
     private boolean active = false;
-
-    private static final Color[] PALETTE = {
-        new Color(255,  50,  50),
-        new Color( 50, 200,  50),
-        new Color( 50, 100, 255),
-        new Color(255, 215,   0),
-        new Color(255, 100, 200),
-        new Color(100, 255, 255)
-    };
 
     public ConfettiAnimation(int screenWidth) {
         x      = new float[NUM_PARTICLES];
@@ -42,13 +34,13 @@ public class ConfettiAnimation {
         Random rng = new Random();
         for (int i = 0; i < NUM_PARTICLES; i++) {
             x[i]      = rng.nextFloat() * screenWidth;
-            y[i]      = -rng.nextFloat() * 300;          // stagger above top
-            vx[i]     = (rng.nextFloat() - 0.5f) * 2.0f;
-            vy[i]     = 1.0f + rng.nextFloat() * 3.0f;
+            y[i]      = -rng.nextFloat() * Config.CONFETTI.spawnHeight;
+            vx[i]     = (rng.nextFloat() - 0.5f) * Config.CONFETTI.vxRange;
+            vy[i]     = Config.CONFETTI.vyBase + rng.nextFloat() * Config.CONFETTI.vyRange;
             angle[i]  = rng.nextFloat() * (float)(Math.PI * 2);
-            angVel[i] = (rng.nextFloat() - 0.5f) * 0.18f;
-            colors[i] = PALETTE[rng.nextInt(PALETTE.length)];
-            sizes[i]  = 6 + rng.nextInt(9);
+            angVel[i] = (rng.nextFloat() - 0.5f) * Config.CONFETTI.angVelRange;
+            colors[i] = Config.CONFETTI.palette[rng.nextInt(Config.CONFETTI.palette.length)];
+            sizes[i]  = Config.CONFETTI.sizeMin + rng.nextInt(Config.CONFETTI.sizeRange);
         }
     }
 
@@ -60,7 +52,7 @@ public class ConfettiAnimation {
         for (int i = 0; i < NUM_PARTICLES; i++) {
             x[i]     += vx[i];
             y[i]     += vy[i];
-            vy[i]    += 0.05f;   // gravity
+            vy[i]    += Config.CONFETTI.gravity;
             angle[i] += angVel[i];
         }
     }
@@ -71,7 +63,7 @@ public class ConfettiAnimation {
         AffineTransform origTransform = g.getTransform();
 
         for (int i = 0; i < NUM_PARTICLES; i++) {
-            if (y[i] > screenHeight + 20) continue; // already off-screen
+            if (y[i] > screenHeight + Config.CONFETTI.offscreenMargin) continue;
 
             // Restore base transform, then apply particle transform
             g.setTransform(origTransform);
@@ -84,21 +76,27 @@ public class ConfettiAnimation {
         g.setTransform(origTransform);
 
         // ── "YOU ESCAPED!" banner ─────────────────────────────────────
-        String text = "YOU ESCAPED!";
-        g.setFont(new Font("SansSerif", Font.BOLD, 54));
+        String text = Config.CONFETTI.bannerText;
+        g.setFont(Config.CONFETTI.bannerFont);
         FontMetrics fm = g.getFontMetrics();
         int tw = fm.stringWidth(text);
         int tx = (screenWidth - tw) / 2;
-        int ty = screenHeight / 2 + 18;
+        int ty = screenHeight / 2 + Config.CONFETTI.bannerTextYOffset;
 
-        // Semi-transparent backing
-        g.setColor(new Color(0, 0, 0, 190));
-        g.fillRoundRect(tx - 24, ty - 56, tw + 48, 72, 18, 18);
+        g.setColor(Config.CONFETTI.bannerBg);
+        g.fillRoundRect(
+                tx - Config.CONFETTI.bannerPadX,
+                ty - Config.CONFETTI.bannerBoxTopOffset,
+                tw + Config.CONFETTI.bannerPadX * 2,
+                Config.CONFETTI.bannerBoxHeight,
+                Config.CONFETTI.bannerRadius,
+                Config.CONFETTI.bannerRadius);
 
-        // Gold text with dark shadow
-        g.setColor(new Color(40, 30, 0));
-        g.drawString(text, tx + 3, ty + 3);
-        g.setColor(new Color(255, 215, 0));
+        g.setColor(Config.CONFETTI.bannerShadow);
+        g.drawString(text,
+                tx + Config.CONFETTI.bannerShadowOffset,
+                ty + Config.CONFETTI.bannerShadowOffset);
+        g.setColor(Config.CONFETTI.bannerTextColor);
         g.drawString(text, tx, ty);
     }
 }

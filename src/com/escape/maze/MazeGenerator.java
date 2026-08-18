@@ -1,5 +1,7 @@
 package com.escape.maze;
 
+import com.escape.Config;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -23,11 +25,7 @@ public class MazeGenerator {
         boolean[][] visited = new boolean[Maze.SIZE][Maze.SIZE];
 
         // Pick a random starting room cell
-        int[] oddVals = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25};
-//        int[] oddVals = new int[COLS / 2 + 1];
-//        for (int i = 0; i < 13; i++) {
-//            oddVals[i] = 1 + 2 * i;
-//        }
+        int[] oddVals = Config.WORLD.odd;
         int startR = oddVals[rng.nextInt(oddVals.length)];
         int startC = oddVals[rng.nextInt(oddVals.length)];
 

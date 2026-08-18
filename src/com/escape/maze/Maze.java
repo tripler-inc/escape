@@ -1,8 +1,10 @@
 package com.escape.maze;
 
+import com.escape.Config;
+
 public class Maze {
 
-    public static final int SIZE = 27;
+    public static final int SIZE = Math.max(Config.WORLD.rows, Config.WORLD.cols) + 2;
 
     private final Cell[][] grid;
 

@@ -1,5 +1,7 @@
 package com.escape.audio;
 
+import com.escape.Config;
+
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiEvent;
@@ -23,7 +25,8 @@ public class AudioPlayer {
             sequencer = MidiSystem.getSequencer();
             sequencer.open();
             sequencer.setSequence(buildVictorySequence());
-            sequencer.setLoopCount(Sequencer.LOOP_CONTINUOUSLY);
+            sequencer.setLoopCount(Config.AUDIO.loopContinuous
+                    ? Sequencer.LOOP_CONTINUOUSLY : 0);
         } catch (MidiUnavailableException | InvalidMidiDataException e) {
             sequencer = null; // audio unavailable; game continues silently
         }
@@ -50,53 +53,31 @@ public class AudioPlayer {
      * Each entry: { pitch, startTick, durationTicks, velocity }
      */
     private static Sequence buildVictorySequence() throws InvalidMidiDataException {
-        Sequence seq   = new Sequence(Sequence.PPQ, 8);
+        Sequence seq   = new Sequence(Sequence.PPQ, Config.AUDIO.victoryPpq);
         Track    track = seq.createTrack();
 
-        // Program change: Acoustic Grand Piano on channel 0
-        addMsg(track, ShortMessage.PROGRAM_CHANGE, 0, 0, 0, 0);
+        addMsg(track, ShortMessage.PROGRAM_CHANGE, 0, Config.AUDIO.victoryProgram, 0, 0);
 
-        // Tempo: ~140 bpm  (428 571 microseconds per beat)
         MetaMessage tempo = new MetaMessage();
-        byte[] tempoBytes = { 0x06, (byte)0x8B, (byte)0x37 }; // 428 791 µs ≈ 140 bpm
+        int us = Config.AUDIO.victoryTempoUsPerBeat;
+        byte[] tempoBytes = {
+            (byte) ((us >> 16) & 0xFF),
+            (byte) ((us >>  8) & 0xFF),
+            (byte) (us & 0xFF)
+        };
         tempo.setMessage(0x51, tempoBytes, 3);
         track.add(new MidiEvent(tempo, 0));
 
         // Notes: { MIDI pitch, startTick, lengthTicks, velocity }
-        int[][] melody = {
-            // Bar 1 — ascending arpeggio to C6
-            { 60, 0,   4, 90 },  // C4
-            { 64, 4,   4, 90 },  // E4
-            { 67, 8,   4, 90 },  // G4
-            { 72, 12,  8,110 },  // C5  (held)
-            // Bar 2 — E5 G5 back to C5
-            { 76, 20,  4, 95 },  // E5
-            { 79, 24,  4, 95 },  // G5
-            { 84, 28, 12,115 },  // C6  (big hit, held)
-            // Bar 3 — descending fill
-            { 79, 40,  4, 85 },  // G5
-            { 76, 44,  4, 85 },  // E5
-            { 72, 48,  4, 85 },  // C5
-            { 69, 52,  4, 80 },  // A4
-            { 67, 56,  4, 80 },  // G4
-            // Bar 4 — triumphant finish
-            { 72, 60,  4, 100 }, // C5
-            { 76, 64,  4, 100 }, // E5
-            { 79, 68,  4, 100 }, // G5
-            { 84, 72,  4, 110 }, // C6
-            { 88, 76, 16, 127 }, // E6  (finale, held)
-        };
-
-        for (int[] n : melody) {
+        for (int[] n : Config.AUDIO.victoryMelody) {
             int pitch = n[0], start = n[1], len = n[2], vel = n[3];
             addMsg(track, ShortMessage.NOTE_ON,  0, pitch, vel,   start);
             addMsg(track, ShortMessage.NOTE_OFF, 0, pitch,   0,   start + len);
         }
 
-        // End-of-track meta event
         MetaMessage eot = new MetaMessage();
         eot.setMessage(0x2F, new byte[0], 0);
-        track.add(new MidiEvent(eot, 96));
+        track.add(new MidiEvent(eot, Config.AUDIO.eotTick));
 
         return seq;
     }

@@ -1,5 +1,6 @@
 package com.escape.render;
 
+import com.escape.Config;
 import com.escape.maze.Maze;
 import com.escape.player.Player;
 import com.escape.world.Floor;
@@ -25,20 +26,18 @@ import java.util.Map;
  */
 public class FirstPersonRenderer {
 
-    private static final Color CEILING_COLOR  = new Color(40, 40, 60);
-    private static final Color FLOOR_COLOR    = new Color(60, 40, 20);
-    private static final Color COIN_GOLD      = new Color(255, 200,   0);
-    private static final Color COIN_HIGHLIGHT = new Color(255, 245, 140);
-    private static final Color LADDER_RAIL    = new Color(110,  65,  15);
-    private static final Color LADDER_RUNG    = new Color(150,  90,  30);
-    private static final Color HOLE_DARK      = new Color( 15,  10,   5);
-    private static final Color HOLE_EDGE      = new Color( 40,  28,  12);
+    private static final Color CEILING_COLOR  = Config.FP.ceiling;
+    private static final Color FLOOR_COLOR    = Config.FP.floor;
+    private static final Color COIN_GOLD      = Config.FP.coinGold;
+    private static final Color COIN_HIGHLIGHT = Config.FP.coinHighlight;
+    private static final Color LADDER_RAIL    = Config.FP.ladderRail;
+    private static final Color LADDER_RUNG    = Config.FP.ladderRung;
+    private static final Color HOLE_DARK      = Config.FP.holeDark;
+    private static final Color HOLE_EDGE      = Config.FP.holeEdge;
 
     // Base wall brightness for each hit-side
-    private static final int BASE_NS = 120; // x-side hit  (N/S walls)
-    private static final int BASE_EW = 160; // y-side hit  (E/W walls)
-
-    private static final int NUM_FLOORS       = 5;
+    private static final int BASE_NS = Config.FP.baseNs;
+    private static final int BASE_EW = Config.FP.baseEw;
 
     /** Per-column wall distance, populated during the DDA pass. */
     private double[] zBuffer = new double[0];
@@ -55,8 +54,8 @@ public class FirstPersonRenderer {
 
         double dirX    =  Math.cos(angle);
         double dirY    =  Math.sin(angle);
-        double planeX  = -Math.sin(angle) * 0.66; // camera plane → ~66° FOV
-        double planeY  =  Math.cos(angle) * 0.66;
+        double planeX  = -Math.sin(angle) * Config.FP.cameraPlaneScale;
+        double planeY  =  Math.cos(angle) * Config.FP.cameraPlaneScale;
 
         // ── Ceiling and floor fills ────────────────────────────────────
         g.setColor(CEILING_COLOR);
@@ -116,7 +115,7 @@ public class FirstPersonRenderer {
 
                 if (maze.isWall(mapY, mapX)) {
                     // Check whether this is the exit door
-                    if (player.floor == NUM_FLOORS-1 && mapY == 0 && mapX == world.getExitCol()) {
+                    if (player.floor == world.getNumFloors()-1 && mapY == 0 && mapX == world.getExitCol()) {
                         isExit = true;
                     }
                     break;

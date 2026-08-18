@@ -12,7 +12,6 @@ import com.escape.world.World;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -28,13 +27,15 @@ import java.util.Set;
  */
 public class GamePanel extends JPanel {
 
-    public  static final int WIDTH  = 1350;
-    public  static final int HEIGHT = 900;
+    public  static final int WIDTH  = Config.GAME_PANEL.width;
+    public  static final int HEIGHT = Config.GAME_PANEL.height;
 
-    private static final float MOVE_SPEED = 0.008f;
-    private static final float ROT_SPEED  = 0.01f; // radians per tick
-    private static final float MAX_MOVE_SPEED = 0.04f;
-    private static final float MAX_ROT_SPEED  = 0.05f; // radians per tick
+    private static final float MOVE_SPEED = Config.GAME_PANEL.moveSpeed;
+    private static final float ROT_SPEED  = Config.GAME_PANEL.rotSpeed;
+    private static final float MAX_MOVE_SPEED = Config.GAME_PANEL.maxMoveSpeed;
+    private static final float MAX_ROT_SPEED  = Config.GAME_PANEL.maxRotSpeed;
+    private static final float MOVE_ACCEL = Config.GAME_PANEL.moveAccel;
+    private static final float ROT_ACCEL  = Config.GAME_PANEL.rotAccel;
     private float moveSpeed = MOVE_SPEED; // Set to default
     private float rotSpeed  = ROT_SPEED;  // Set to default
 
@@ -55,7 +56,7 @@ public class GamePanel extends JPanel {
     // ── Constructor ───────────────────────────────────────────────────
     public GamePanel() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
-        setBackground(Color.BLACK);
+        setBackground(Config.GAME_PANEL.backgroundColor);
         setFocusable(true);
 
         world       = new World();
@@ -76,7 +77,7 @@ public class GamePanel extends JPanel {
             } // reset rotation and move speed
         });
 
-        new Timer(16, e -> tick()).start(); // ~62 fps
+        new Timer(Config.GAME_PANEL.tickMs, e -> tick()).start();
     }
 
     // ── Game loop ─────────────────────────────────────────────────────
@@ -107,25 +108,25 @@ public class GamePanel extends JPanel {
         if (heldKeys.contains(KeyEvent.VK_UP)) {
             world.tryMove(dirX * moveSpeed, dirY * moveSpeed);
             if (moveSpeed < MAX_MOVE_SPEED) {
-                moveSpeed += 0.002f; // gradually increase move speed
+                moveSpeed += MOVE_ACCEL;
             }
         }
         if (heldKeys.contains(KeyEvent.VK_DOWN)) {
             world.tryMove(-dirX * moveSpeed, -dirY * moveSpeed);
             if (moveSpeed < MAX_MOVE_SPEED) {
-                moveSpeed += 0.002f; // gradually increase move speed
+                moveSpeed += MOVE_ACCEL;
             }
         }
         if (heldKeys.contains(KeyEvent.VK_LEFT)) {
             player.angle -= rotSpeed;
             if (rotSpeed < MAX_ROT_SPEED) {
-                rotSpeed += 0.002f; // gradually increase rotation speed
+                rotSpeed += ROT_ACCEL;
             }
         }
         if (heldKeys.contains(KeyEvent.VK_RIGHT)) {
             player.angle += rotSpeed;
             if (rotSpeed < MAX_ROT_SPEED) {
-                rotSpeed += 0.002f; // gradually increase rotation speed
+                rotSpeed += ROT_ACCEL;
             }
         }
     }

@@ -1,10 +1,10 @@
 package com.escape.render;
 
+import com.escape.Config;
 import com.escape.player.Player;
 import com.escape.world.ItemType;
 import com.escape.world.World;
 
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
@@ -40,18 +40,18 @@ public class HUDRenderer {
 
     private void drawCoinCounter(Graphics2D g, int count) {
         // Gold disc
-        g.setColor(new Color(255, 210, 0));
+        g.setColor(Config.HUD.coin);
         g.fillOval(12, 12, 22, 22);
-        g.setColor(new Color(180, 140, 0));
+        g.setColor(Config.HUD.coinBorder);
         g.drawOval(12, 12, 22, 22);
 
         // Inner shine
-        g.setColor(new Color(255, 240, 120));
+        g.setColor(Config.HUD.coinShine);
         g.fillOval(16, 15, 8, 7);
 
         // Count text
         g.setFont(new Font("SansSerif", Font.BOLD, 18));
-        g.setColor(Color.WHITE);
+        g.setColor(Config.HUD.coinText);
         g.drawString("\u00d7 " + count, 40, 30);
     }
 
@@ -59,17 +59,17 @@ public class HUDRenderer {
 
     private void drawKeyIcon(Graphics2D g, int x, int y) {
         // Head circle
-        g.setColor(new Color(255, 210, 0));
+        g.setColor(Config.HUD.keyColor);
         g.fillOval(x, y, 22, 22);
-        g.setColor(new Color(180, 140, 0));
+        g.setColor(Config.HUD.keyBorder);
         g.drawOval(x, y, 22, 22);
 
         // Hole
-        g.setColor(new Color(40, 25, 0));
+        g.setColor(Config.HUD.keyHole);
         g.fillOval(x + 7, y + 7, 8, 8);
 
         // Shaft
-        g.setColor(new Color(255, 210, 0));
+        g.setColor(Config.HUD.keyShaft);
         g.fillRect(x + 22, y + 9, 24, 5);
 
         // Teeth
@@ -77,7 +77,7 @@ public class HUDRenderer {
         g.fillRect(x + 30, y + 14, 4, 5);
 
         // Shaft border
-        g.setColor(new Color(180, 140, 0));
+        g.setColor(Config.HUD.keyShaftBorder);
         g.drawRect(x + 22, y + 9, 24, 5);
     }
 
@@ -85,35 +85,35 @@ public class HUDRenderer {
 
     private void drawContextHint(Graphics2D g, int width, int height, ItemType cell) {
         String hint = null;
-        if (cell == ItemType.LADDER_UP)  hint = "Press U to climb";
-        if (cell == ItemType.HOLE_DOWN)  hint = "Press D to descend";
+        if (cell == ItemType.LADDER_UP)  hint = Config.HUD.hintUp;
+        if (cell == ItemType.HOLE_DOWN)  hint = Config.HUD.hintDown;
         if (hint == null) return;
 
-        g.setFont(new Font("SansSerif", Font.BOLD, 16));
+        g.setFont(Config.HUD.hintFont);
         FontMetrics fm = g.getFontMetrics();
         int tw = fm.stringWidth(hint);
         int tx = (width - tw) / 2;
         int ty = height - 28;
 
-        g.setColor(new Color(0, 0, 0, 160));
+        g.setColor(Config.HUD.hintFill);
         g.fillRoundRect(tx - 10, ty - 20, tw + 20, 30, 10, 10);
-        g.setColor(Color.WHITE);
+        g.setColor(Config.HUD.hintText);
         g.drawString(hint, tx, ty);
     }
 
     // ── Locked-exit warning (centre) ────────────────────────────────
 
     private void drawLockedMessage(Graphics2D g, int width, int height) {
-        String msg = "The exit is locked!  Find the key.";
-        g.setFont(new Font("SansSerif", Font.BOLD, 20));
+        String msg = Config.HUD.hintLocked;
+        g.setFont(Config.HUD.lockedFont);
         FontMetrics fm = g.getFontMetrics();
         int tw = fm.stringWidth(msg);
         int tx = (width - tw) / 2;
         int ty = height / 2 - 10;
 
-        g.setColor(new Color(0, 0, 0, 190));
+        g.setColor(Config.HUD.lockedFill);
         g.fillRoundRect(tx - 16, ty - 30, tw + 32, 44, 12, 12);
-        g.setColor(new Color(255, 80, 80));
+        g.setColor(Config.HUD.lockedText);
         g.drawString(msg, tx, ty);
     }
 }

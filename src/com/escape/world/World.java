@@ -1,5 +1,6 @@
 package com.escape.world;
 
+import com.escape.Config;
 import com.escape.maze.Cell;
 import com.escape.maze.Maze;
 import com.escape.maze.MazeGenerator;
@@ -19,11 +20,11 @@ public class World {
 
     public enum GameState { PLAYING, WIN }
 
-    private static final int NUM_FLOORS      = 5;
-    private static final int COINS_PER_FLOOR = 10;
-    private static final int ROWS = 25;
-    private static final int COLS = 25;
-    private static final int[] ODD = {1,3,5,7,9,11,13,15,17,19,21,23,25};
+    private static final int NUM_FLOORS      = Config.WORLD.numFloors;
+    private static final int COINS_PER_FLOOR = Config.WORLD.coinsPerFloor;
+    private static final int ROWS = Config.WORLD.rows;
+    private static final int COLS = Config.WORLD.cols;
+    private static final int[] ODD = Config.WORLD.odd;
 
     // ---------------------------------------------------------------
     private final Floor[]   floors;
@@ -35,7 +36,7 @@ public class World {
     private final Point[] ladders;   // connects floor 0 <-> 1 at this grid cell
 
     private int lockedMessageTicks = 0;
-    public  static final int LOCKED_MSG_DURATION = 120; // 2 s @ 60 fps
+    public  static final int LOCKED_MSG_DURATION = Config.WORLD.lockedMsgDuration;
 
     public final SoundPlayer soundPlayer = new SoundPlayer();
 
@@ -70,7 +71,7 @@ public class World {
             floors[i+1].placeItem(ladders[i].y, ladders[i].x, ItemType.HOLE_DOWN);
         }
 
-        // ── Phase 3: place 5 coins per floor ────────────────────────
+        // ── Phase 3: place coins per floor ──────────────────────────
         for (int f = 0; f < NUM_FLOORS; f++) {
             int placed = 0;
             List<Point> cells = shuffledRoomCells(rng, floors[f].getMaze());
@@ -140,6 +141,7 @@ public class World {
 
     public Floor       getFloor(int index)  { return floors[index]; }
     public Floor       getCurrentFloor()    { return floors[player.floor]; }
+    public int         getNumFloors()       { return NUM_FLOORS; }
     public Player      getPlayer()          { return player; }
     public GameState   getGameState()       { return gameState; }
     public int         getExitCol()         { return exitCol; }

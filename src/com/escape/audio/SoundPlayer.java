@@ -1,23 +1,33 @@
 package com.escape.audio;
 
+import com.escape.Config;
+
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
 
 public class SoundPlayer {
-    private static final float SAMPLE_RATE = 44100f;
+    private static final float SAMPLE_RATE = Config.SOUND.sampleRate;
     private static final AudioFormat FORMAT = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
     private static final DataLine.Info INFO = new DataLine.Info(SourceDataLine.class, FORMAT);
 
     // Reuse fixed sound patterns so we do not regenerate PCM each playback.
-//    private static final byte[] FOOTSTEP_PCM = buildPatternPcm(new double[] { 182.0, 164.0 }, 32, 3, 0.1125);
-    private static final byte[] FOOTSTEP_PCM = buildPatternPcm(new double[] { 182.0, 164.0 }, 20, 3, 0.21875);
-    private static final byte[] KEY_PICKUP_PCM = buildPatternPcm(new double[] { 880.0, 1174.7, 1568.0 }, 28, 4, 0.28125);
-//    private static final byte[] COIN_CLINK_PCM = buildPatternPcm(new double[] { 1318.5, 1760.0 }, 18, 2, 0.21875);
-    private static final byte[] COIN_CLINK_PCM = buildPatternPcm(new double[] { 1318.5, 1760.0 }, 18, 2, 0.28125);
-    private static final byte[] LADDER_UP_PCM = buildPatternPcm(new double[] { 392.0, 493.9, 587.3 }, 46, 8, 0.2);
-    private static final byte[] LADDER_DOWN_PCM = buildPatternPcm(new double[] { 587.3, 493.9, 392.0 }, 46, 8, 0.2);
+    private static final byte[] FOOTSTEP_PCM = buildPatternPcm(
+            Config.SOUND.footstepFreqs, Config.SOUND.footstepDurationMs,
+            Config.SOUND.footstepGapMs, Config.SOUND.footstepVolume);
+    private static final byte[] KEY_PICKUP_PCM = buildPatternPcm(
+            Config.SOUND.keyPickupFreqs, Config.SOUND.keyPickupDurationMs,
+            Config.SOUND.keyPickupGapMs, Config.SOUND.keyPickupVolume);
+    private static final byte[] COIN_CLINK_PCM = buildPatternPcm(
+            Config.SOUND.coinClinkFreqs, Config.SOUND.coinClinkDurationMs,
+            Config.SOUND.coinClinkGapMs, Config.SOUND.coinClinkVolume);
+    private static final byte[] LADDER_UP_PCM = buildPatternPcm(
+            Config.SOUND.ladderUpFreqs, Config.SOUND.ladderUpDurationMs,
+            Config.SOUND.ladderUpGapMs, Config.SOUND.ladderUpVolume);
+    private static final byte[] LADDER_DOWN_PCM = buildPatternPcm(
+            Config.SOUND.ladderDownFreqs, Config.SOUND.ladderDownDurationMs,
+            Config.SOUND.ladderDownGapMs, Config.SOUND.ladderDownVolume);
 
     private static SourceDataLine sharedLine;
 
@@ -67,7 +77,7 @@ public class SoundPlayer {
         if (sharedLine == null || !sharedLine.isOpen()) {
             sharedLine = (SourceDataLine) AudioSystem.getLine(INFO);
             // Small fixed buffer helps keep trigger latency low.
-            sharedLine.open(FORMAT, 2048);
+            sharedLine.open(FORMAT, Config.SOUND.lineBufferSize);
         }
         return sharedLine;
     }
@@ -92,8 +102,8 @@ public class SoundPlayer {
     private static void writeToneInto(byte[] buffer, int sampleOffset, double frequencyHz, int samples, double volume) {
         for (int i = 0; i < samples; i++) {
             double t = i / SAMPLE_RATE;
-            double attack = Math.min(1.0, i / (samples * 0.12));
-            double decay = Math.pow(1.0 - (double) i / samples, 1.35);
+            double attack = Math.min(1.0, i / (samples * Config.SOUND.envelopeAttackRatio));
+            double decay = Math.pow(1.0 - (double) i / samples, Config.SOUND.envelopeDecayPower);
             double envelope = attack * decay;
             double sample = Math.sin(2.0 * Math.PI * frequencyHz * t) * envelope * volume;
             short value = (short) (Math.max(-1.0, Math.min(1.0, sample)) * 32767);

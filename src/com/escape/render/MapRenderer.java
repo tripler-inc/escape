@@ -1,5 +1,6 @@
 package com.escape.render;
 
+import com.escape.Config;
 import com.escape.maze.Maze;
 import com.escape.player.Player;
 import com.escape.world.Floor;
@@ -18,10 +19,10 @@ import java.awt.Stroke;
  */
 public class MapRenderer {
 
-    private static final Color COL_BORDER  = new Color(15, 15, 15);
-    private static final Color COL_WALL    = new Color(55, 55, 65);
-    private static final Color COL_PASSAGE = new Color(215, 210, 195);
-    private static final Color COL_PLAYER  = new Color(220, 30, 30);
+    private static final Color COL_BORDER  = Config.MAP.border;
+    private static final Color COL_WALL    = Config.MAP.wall;
+    private static final Color COL_PASSAGE = Config.MAP.passage;
+    private static final Color COL_PLAYER  = Config.MAP.player;
 
     public void render(Graphics2D g, int width, int height, World world) {
         Player player = world.getPlayer();
@@ -34,7 +35,7 @@ public class MapRenderer {
         int offsetY  = (height - cellSize * mazeSize) / 2;
 
         // ── Background ────────────────────────────────────────────────
-        g.setColor(Color.BLACK);
+        g.setColor(Config.MAP.backgroundColor);
         g.fillRect(0, 0, width, height);
 
         // ── Grid cells ────────────────────────────────────────────────
