@@ -30,6 +30,8 @@ public class FirstPersonRenderer {
     private static final Color FLOOR_COLOR    = Config.FP.floor;
     private static final Color COIN_GOLD      = Config.FP.coinGold;
     private static final Color COIN_HIGHLIGHT = Config.FP.coinHighlight;
+    private static final Color KEY_GOLD       = Config.FP.keyGold;
+    private static final Color KEY_HIGHLIGHT  = Config.FP.keyHighlight;
     private static final Color LADDER_RAIL    = Config.FP.ladderRail;
     private static final Color LADDER_RUNG    = Config.FP.ladderRung;
     private static final Color HOLE_DARK      = Config.FP.holeDark;
@@ -157,7 +159,7 @@ public class FirstPersonRenderer {
             g.drawLine(x, drawStart, x, drawEnd);
         }
 
-        // ── Item sprites (coins, ladders, holes) over walls via z-buffer ──
+        // ── Item sprites (coins, key, ladders, holes) over walls via z-buffer ──
         renderSprites(g, width, height, world, px, py, dirX, dirY, planeX, planeY);
     }
 
@@ -171,12 +173,13 @@ public class FirstPersonRenderer {
                                 double planeX, double planeY) {
         Floor floor = world.getCurrentFloor();
 
-        // Collect COIN, LADDER_UP, HOLE_DOWN with squared player-distance
+        // Collect COIN, KEY, LADDER_UP, HOLE_DOWN with squared player-distance
         // Entry: { worldX, worldY, dist², itemType.ordinal() }
         List<double[]> sprites = new ArrayList<>();
         for (Map.Entry<Point, ItemType> entry : floor.getItems().entrySet()) {
             ItemType type = entry.getValue();
             if (type != ItemType.COIN
+                    && type != ItemType.KEY
                     && type != ItemType.LADDER_UP
                     && type != ItemType.HOLE_DOWN) continue;
             Point  p  = entry.getKey();   // x = col, y = row
@@ -206,6 +209,7 @@ public class FirstPersonRenderer {
             ItemType type = ItemType.values()[(int) sp[3]];
             switch (type) {
                 case COIN:      drawCoinSprite  (g, width, height, screenX, transformY); break;
+                case KEY:       drawKeySprite   (g, width, height, screenX, transformY); break;
                 case LADDER_UP: drawLadderSprite(g, width, height, screenX, transformY); break;
                 case HOLE_DOWN: drawHoleSprite  (g, width, height, screenX, transformY); break;
                 default: break;
@@ -257,6 +261,63 @@ public class FirstPersonRenderer {
                 g.drawLine(stripe, yHiBot + 1, stripe, yBot);
             }
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // Key: ring bow with a hole, shaft, and two teeth
+    // ─────────────────────────────────────────────────────────────────
+
+    private void drawKeySprite(Graphics2D g, int width, int height,
+                                int screenX, double transformY) {
+        int halfH = Math.max(3, (int)(height / transformY / 8));
+        int halfW = Math.max(4, (int)(halfH * 2.2));
+
+        double keyWorldH = 0.5;
+        int centerY = (int)(height / 2.0 + (0.5 - keyWorldH) * height / transformY);
+
+        int startX = Math.max(0,         screenX - halfW);
+        int endX   = Math.min(width - 1, screenX + halfW);
+        int startY = Math.max(0,          centerY - halfH);
+        int endY   = Math.min(height - 1, centerY + halfH);
+
+        for (int stripe = startX; stripe <= endX; stripe++) {
+            if (transformY >= zBuffer[stripe]) continue;
+
+            double nx = (double)(stripe - screenX) / halfW;
+            if (Math.abs(nx) > 1.0) continue;
+
+            int runStart = -1;
+            boolean runHi = false;
+            for (int y = startY; y <= endY + 1; y++) {
+                double ny = (y <= endY) ? (double)(y - centerY) / halfH : 2.0;
+                boolean inside = y <= endY && inKeyBody(nx, ny);
+                boolean hi = inside && ny < -0.06;
+                if (inside && runStart < 0) {
+                    runStart = y;
+                    runHi = hi;
+                } else if (runStart >= 0 && (!inside || hi != runHi)) {
+                    g.setColor(runHi ? KEY_HIGHLIGHT : KEY_GOLD);
+                    g.drawLine(stripe, runStart, stripe, y - 1);
+                    if (inside) {
+                        runStart = y;
+                        runHi = hi;
+                    } else {
+                        runStart = -1;
+                    }
+                }
+            }
+        }
+    }
+
+    /** Skeleton-key silhouette in normalized sprite space (nx, ny in [-1, 1]). */
+    private static boolean inKeyBody(double nx, double ny) {
+        double bx = nx + 0.50;
+        double br2 = bx * bx + ny * ny;
+        boolean inBow = br2 <= 0.44 * 0.44 && br2 >= 0.20 * 0.20;
+        boolean inShaft = nx >= -0.16 && nx <= 0.94 && ny >= -0.14 && ny <= 0.14;
+        boolean toothTip = nx >= 0.70 && nx <= 0.94 && ny >= 0.14 && ny <= 0.62;
+        boolean toothMid = nx >= 0.38 && nx <= 0.58 && ny >= 0.14 && ny <= 0.42;
+        return inBow || inShaft || toothTip || toothMid;
     }
 
     // ─────────────────────────────────────────────────────────────────

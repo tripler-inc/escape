@@ -84,21 +84,13 @@ public class World {
             }
         }
 
-        // ── Phase 4: place key (any floor, avoiding start/ladders/coins)
-        List<Integer> floorOrder = new ArrayList<>();
-        for (int i = 0; i < NUM_FLOORS; i++) {
-            floorOrder.add(i);
-        }
-        Collections.shuffle(floorOrder, rng);
-        outer:
-        for (int f : floorOrder) {
-            List<Point> cells = shuffledRoomCells(rng, floors[f].getMaze());
-            for (Point p : cells) {
-                if (isReserved(p, f)) continue;
-                if (floors[f].hasItem(p.y, p.x)) continue;
-                floors[f].placeItem(p.y, p.x, ItemType.KEY);
-                break outer;
-            }
+        // ── Phase 4: place key on the first floor (avoid start/ladders/coins)
+        List<Point> keyCells = shuffledRoomCells(rng, floors[0].getMaze());
+        for (Point p : keyCells) {
+            if (isReserved(p, 0)) continue;
+            if (floors[0].hasItem(p.y, p.x)) continue;
+            floors[0].placeItem(p.y, p.x, ItemType.KEY);
+            break;
         }
 
         // ── Create player ────────────────────────────────────────────
