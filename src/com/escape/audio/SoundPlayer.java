@@ -6,6 +6,9 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class SoundPlayer {
     private static final float SAMPLE_RATE = Config.SOUND.sampleRate;
@@ -29,13 +32,29 @@ public class SoundPlayer {
             Config.SOUND.ladderDownFreqs, Config.SOUND.ladderDownDurationMs,
             Config.SOUND.ladderDownGapMs, Config.SOUND.ladderDownVolume);
 
+    private static final ExecutorService FOOTSTEP_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r, "footstep-audio");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private static final AtomicBoolean FOOTSTEP_ACTIVE = new AtomicBoolean(false);
+
     private static SourceDataLine sharedLine;
 
     public SoundPlayer() {
     }
     
     public void playFootsteps() {
-        playPcm(FOOTSTEP_PCM);
+        if (!FOOTSTEP_ACTIVE.compareAndSet(false, true)) {
+            return;
+        }
+        FOOTSTEP_EXECUTOR.submit(() -> {
+            try {
+                playPcm(FOOTSTEP_PCM);
+            } finally {
+                FOOTSTEP_ACTIVE.set(false);
+            }
+        });
     }
 
     public void playKeyPickup() {

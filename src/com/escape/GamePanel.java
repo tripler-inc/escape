@@ -36,6 +36,7 @@ public class GamePanel extends JPanel {
     private static final float MAX_ROT_SPEED  = Config.GAME_PANEL.maxRotSpeed;
     private static final float MOVE_ACCEL = Config.GAME_PANEL.moveAccel;
     private static final float ROT_ACCEL  = Config.GAME_PANEL.rotAccel;
+    private static final int FOOTSTEP_INTERVAL_MS = Config.SOUND.footstepIntervalMs;
     private float moveSpeed = MOVE_SPEED; // Set to default
     private float rotSpeed  = ROT_SPEED;  // Set to default
 
@@ -52,6 +53,7 @@ public class GamePanel extends JPanel {
     // ── Input state ───────────────────────────────────────────────────
     private final Set<Integer> heldKeys = new HashSet<>();
     private boolean winStarted = false;
+    private int footstepCooldownMs = 0;
 
     // ── Constructor ───────────────────────────────────────────────────
     public GamePanel() {
@@ -104,15 +106,20 @@ public class GamePanel extends JPanel {
         Player player = world.getPlayer();
         float dirX = (float) Math.cos(player.angle);
         float dirY = (float) Math.sin(player.angle);
+        float beforePx = player.px;
+        float beforePy = player.py;
+        boolean moved = false;
 
         if (heldKeys.contains(KeyEvent.VK_UP)) {
             world.tryMove(dirX * moveSpeed, dirY * moveSpeed);
+            moved |= player.px != beforePx || player.py != beforePy;
             if (moveSpeed < MAX_MOVE_SPEED) {
                 moveSpeed += MOVE_ACCEL;
             }
         }
         if (heldKeys.contains(KeyEvent.VK_DOWN)) {
             world.tryMove(-dirX * moveSpeed, -dirY * moveSpeed);
+            moved |= player.px != beforePx || player.py != beforePy;
             if (moveSpeed < MAX_MOVE_SPEED) {
                 moveSpeed += MOVE_ACCEL;
             }
@@ -128,6 +135,14 @@ public class GamePanel extends JPanel {
             if (rotSpeed < MAX_ROT_SPEED) {
                 rotSpeed += ROT_ACCEL;
             }
+        }
+
+        if (footstepCooldownMs > 0) {
+            footstepCooldownMs -= Config.GAME_PANEL.tickMs;
+        }
+        if (moved && footstepCooldownMs <= 0) {
+            world.soundPlayer.playFootsteps();
+            footstepCooldownMs = FOOTSTEP_INTERVAL_MS;
         }
     }
 

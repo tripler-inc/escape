@@ -168,6 +168,7 @@ public final class Config {
         public final int lineBufferSize;
         public final double envelopeAttackRatio;
         public final double envelopeDecayPower;
+        public final int footstepIntervalMs;
         public final double[] footstepFreqs;
         public final int footstepDurationMs;
         public final int footstepGapMs;
@@ -194,6 +195,7 @@ public final class Config {
             lineBufferSize        = getInt("SoundPlayer", "LINE_BUFFER_SIZE");
             envelopeAttackRatio   = getDouble("SoundPlayer", "ENVELOPE_ATTACK_RATIO");
             envelopeDecayPower    = getDouble("SoundPlayer", "ENVELOPE_DECAY_POWER");
+            footstepIntervalMs    = getInt("SoundPlayer", "FOOTSTEP_INTERVAL_MS");
             footstepFreqs         = getDoubleArray("SoundPlayer", "FOOTSTEP_FREQS");
             footstepDurationMs    = getInt("SoundPlayer", "FOOTSTEP_DURATION_MS");
             footstepGapMs         = getInt("SoundPlayer", "FOOTSTEP_GAP_MS");
