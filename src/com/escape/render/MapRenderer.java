@@ -80,10 +80,10 @@ public class MapRenderer {
                    (int) arrowEndX,    (int) arrowEndY);
         g.setStroke(saved);
 
-        // ── Floor label (top-left) ────────────────────────────────────
+        // ── Floor label (below HUD) ───────────────────────────────────
         g.setFont(new Font("SansSerif", Font.BOLD, 16));
         g.setColor(Color.WHITE);
 //        g.drawString("Floor " + (player.floor + 1) + " of 3", 10, 24);
-        g.drawString("Floor " + (player.floor + 1), 10, 24);
+        g.drawString("Floor " + (player.floor + 1), 10, 56);
     }
 }

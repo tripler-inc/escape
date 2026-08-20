@@ -10,7 +10,7 @@ import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 
 /**
- * Draws the HUD overlay on top of the first-person 3-D view:
+ * Draws the HUD overlay on top of the map view:
  *   - Top-left  : gold coin icon + coin count
  *   - Top-right : key icon (only when player has the key)
  *   - Centre-bottom : contextual hint (climb / descend)
@@ -20,8 +20,6 @@ public class HUDRenderer {
 
     public void render(Graphics2D g, int width, int height, World world) {
         Player   player = world.getPlayer();
-        ItemType cell   = world.getCurrentFloor()
-                               .getItemAt(player.getGridRow(), player.getGridCol());
 
         drawCoinCounter(g, player.coins);
 
@@ -29,8 +27,19 @@ public class HUDRenderer {
             drawKeyIcon(g, width - 54, 10);
         }
 
-        drawContextHint(g, width, height, cell);
+        if (world.isLockedMessageVisible()) {
+            drawLockedMessage(g, width, height);
+        }
+    }
 
+    public void renderContextHint(Graphics2D g, int width, int height, World world) {
+        Player player = world.getPlayer();
+        ItemType cell = world.getCurrentFloor()
+                             .getItemAt(player.getGridRow(), player.getGridCol());
+        drawContextHint(g, width, height, cell);
+    }
+
+    public void renderLockedMessage(Graphics2D g, int width, int height, World world) {
         if (world.isLockedMessageVisible()) {
             drawLockedMessage(g, width, height);
         }

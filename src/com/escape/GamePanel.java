@@ -171,9 +171,13 @@ public class GamePanel extends JPanel {
 
         if (renderMode == RenderMode.FIRST_PERSON || world.getGameState() == World.GameState.WIN) {
             fpRenderer.render(g2, w, h, world);
-            hudRenderer.render(g2, w, h, world);
+            if (world.getGameState() == World.GameState.PLAYING) {
+                hudRenderer.renderContextHint(g2, w, h, world);
+                hudRenderer.renderLockedMessage(g2, w, h, world);
+            }
         } else {
             mapRenderer.render(g2, w, h, world);
+            hudRenderer.render(g2, w, h, world);
         }
 
         if (confetti.isActive()) {

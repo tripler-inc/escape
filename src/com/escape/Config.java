@@ -7,9 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -471,27 +468,6 @@ public final class Config {
             return resource;
         }
 
-        Path[] candidates = {
-            Paths.get("src/com/escape/config.ini"),
-            Paths.get("com/escape/config.ini"),
-            Paths.get("config.ini")
-        };
-        for (Path candidate : candidates) {
-            if (Files.isRegularFile(candidate)) {
-                return Files.newInputStream(candidate);
-            }
-        }
-
-        Path cwd = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
-        Path dir = cwd;
-        for (int i = 0; i < 6 && dir != null; i++) {
-            Path nested = dir.resolve("src/com/escape/config.ini");
-            if (Files.isRegularFile(nested)) {
-                return Files.newInputStream(nested);
-            }
-            dir = dir.getParent();
-        }
-
-        throw new IOException("config.ini not found (looked on classpath and under " + cwd + ")");
+        throw new IOException("config.ini not found on the classpath next to com.escape.Config");
     }
 }

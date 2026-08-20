@@ -270,7 +270,7 @@ public class FirstPersonRenderer {
     private void drawKeySprite(Graphics2D g, int width, int height,
                                 int screenX, double transformY) {
         int halfH = Math.max(3, (int)(height / transformY / 8));
-        int halfW = Math.max(4, (int)(halfH * 2.2));
+        int halfW = Math.max(2, (int)(halfH * 1.1));
 
         double keyWorldH = 0.5;
         int centerY = (int)(height / 2.0 + (0.5 - keyWorldH) * height / transformY);
