@@ -36,6 +36,9 @@ public class FirstPersonRenderer {
     private static final Color LADDER_RUNG    = Config.FP.ladderRung;
     private static final Color HOLE_DARK      = Config.FP.holeDark;
     private static final Color HOLE_EDGE      = Config.FP.holeEdge;
+    private static final Color MAP_PAPER      = new Color(232, 214, 163);
+    private static final Color MAP_FOLD       = new Color(188, 164, 112);
+    private static final Color MAP_INK        = new Color(72, 56, 36);
 
     // Base wall brightness for each hit-side
     private static final int BASE_NS = Config.FP.baseNs;
@@ -159,7 +162,7 @@ public class FirstPersonRenderer {
             g.drawLine(x, drawStart, x, drawEnd);
         }
 
-        // ── Item sprites (coins, key, ladders, holes) over walls via z-buffer ──
+        // ── Item sprites (coins, map, key, ladders, holes) over walls via z-buffer ──
         renderSprites(g, width, height, world, px, py, dirX, dirY, planeX, planeY);
     }
 
@@ -173,12 +176,13 @@ public class FirstPersonRenderer {
                                 double planeX, double planeY) {
         Floor floor = world.getCurrentFloor();
 
-        // Collect COIN, KEY, LADDER_UP, HOLE_DOWN with squared player-distance
+        // Collect COIN, MAP, KEY, LADDER_UP, HOLE_DOWN with squared player-distance
         // Entry: { worldX, worldY, dist², itemType.ordinal() }
         List<double[]> sprites = new ArrayList<>();
         for (Map.Entry<Point, ItemType> entry : floor.getItems().entrySet()) {
             ItemType type = entry.getValue();
             if (type != ItemType.COIN
+                && type != ItemType.MAP
                     && type != ItemType.KEY
                     && type != ItemType.LADDER_UP
                     && type != ItemType.HOLE_DOWN) continue;
@@ -209,10 +213,62 @@ public class FirstPersonRenderer {
             ItemType type = ItemType.values()[(int) sp[3]];
             switch (type) {
                 case COIN:      drawCoinSprite  (g, width, height, screenX, transformY); break;
+                case MAP:       drawMapSprite   (g, width, height, screenX, transformY); break;
                 case KEY:       drawKeySprite   (g, width, height, screenX, transformY); break;
                 case LADDER_UP: drawLadderSprite(g, width, height, screenX, transformY); break;
                 case HOLE_DOWN: drawHoleSprite  (g, width, height, screenX, transformY); break;
                 default: break;
+            }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // Map: folded parchment card with route markings
+    // ─────────────────────────────────────────────────────────────────
+
+    private void drawMapSprite(Graphics2D g, int width, int height,
+                                int screenX, double transformY) {
+        int halfH = Math.max(3, (int)(height / transformY / 8));
+        int halfW = Math.max(4, (int)(halfH * 1.25));
+
+        double mapWorldH = 0.52;
+        int centerY = (int)(height / 2.0 + (0.5 - mapWorldH) * height / transformY);
+
+        int startX = Math.max(0,         screenX - halfW);
+        int endX   = Math.min(width - 1, screenX + halfW);
+
+        for (int stripe = startX; stripe <= endX; stripe++) {
+            if (transformY >= zBuffer[stripe]) continue;
+
+            double nx = (double)(stripe - screenX) / halfW;
+            if (Math.abs(nx) > 1.0) continue;
+
+            // Slightly irregular top/bottom edge so it reads as paper, not a rectangle.
+            double edgeJitter = 0.08 * Math.sin(nx * 8.0);
+            double bodyTopN = -0.74 + edgeJitter;
+            double bodyBotN =  0.74 - edgeJitter * 0.6;
+
+            int yTop = Math.max(0,          (int)(centerY + bodyTopN * halfH));
+            int yBot = Math.min(height - 1, (int)(centerY + bodyBotN * halfH));
+            if (yTop >= yBot) continue;
+
+            for (int y = yTop; y <= yBot; y++) {
+                double ny = (double)(y - centerY) / halfH;
+
+                // Two vertical folds + a route line and marker dots.
+                boolean fold = Math.abs(nx + 0.32) < 0.05 || Math.abs(nx - 0.05) < 0.05;
+                boolean route = Math.abs(ny - (0.38 * nx + 0.05)) < 0.035;
+                boolean markA = (nx + 0.48) * (nx + 0.48) + (ny + 0.18) * (ny + 0.18) < 0.018;
+                boolean markB = (nx - 0.44) * (nx - 0.44) + (ny - 0.22) * (ny - 0.22) < 0.018;
+
+                if (route || markA || markB) {
+                    g.setColor(MAP_INK);
+                } else if (fold) {
+                    g.setColor(MAP_FOLD);
+                } else {
+                    g.setColor(MAP_PAPER);
+                }
+                g.drawLine(stripe, y, stripe, y);
             }
         }
     }

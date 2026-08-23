@@ -87,6 +87,11 @@ public class GamePanel extends JPanel {
     private void tick() {
         if (world.getGameState() == World.GameState.PLAYING) {
             handleHeldKeys();
+
+            if (renderMode == RenderMode.MAP && !world.hasMapForCurrentFloor()) {
+                renderMode = RenderMode.FIRST_PERSON;
+            }
+
             // only collect items when in first-person mode
             if (renderMode == RenderMode.FIRST_PERSON) {
                 world.collectItems();
@@ -164,8 +169,11 @@ public class GamePanel extends JPanel {
             case KeyEvent.VK_U: world.tryClimb();   break;
             case KeyEvent.VK_D: world.tryDescend();  break;
             case KeyEvent.VK_M:
-                renderMode = (renderMode == RenderMode.FIRST_PERSON)
-                        ? RenderMode.MAP : RenderMode.FIRST_PERSON;
+                if (renderMode == RenderMode.MAP) {
+                    renderMode = RenderMode.FIRST_PERSON;
+                } else if (world.hasMapForCurrentFloor()) {
+                    renderMode = RenderMode.MAP;
+                }
                 break;
         }
     }

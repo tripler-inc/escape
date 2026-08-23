@@ -93,14 +93,25 @@ public class World {
             break;
         }
 
+        // ── Phase 5: place one map on each floor
+        for (int f = 0; f < NUM_FLOORS; f++) {
+            List<Point> mapCells = shuffledRoomCells(rng, floors[f].getMaze());
+            for (Point p : mapCells) {
+                if (isReserved(p, f)) continue;
+                if (floors[f].hasItem(p.y, p.x)) continue;
+                floors[f].placeItem(p.y, p.x, ItemType.MAP);
+                break;
+            }
+        }
+
         // ── Create player ────────────────────────────────────────────
-        player    = new Player(startCol + 0.5f, ROWS + 0.5f, 0);
+        player    = new Player(startCol + 0.5f, ROWS + 0.5f, 0, NUM_FLOORS);
         gameState = GameState.PLAYING;
     }
 
     // ── helpers ─────────────────────────────────────────────────────
 
-    /** Returns true for cells that should never hold a coin/key. */
+    /** Returns true for cells that should never hold a pickup item. */
     private boolean isReserved(Point p, int floor) {
         if (floor < NUM_FLOORS - 1 && p.equals(ladders[floor])) return true;
         if (floor == 0 && p.x == startCol && p.y == ROWS) return true;
@@ -138,6 +149,7 @@ public class World {
     public GameState   getGameState()       { return gameState; }
     public int         getExitCol()         { return exitCol; }
     public int         getStartCol()        { return startCol; }
+    public boolean     hasMapForCurrentFloor() { return player.hasMapForFloor(player.floor); }
 
     public boolean isLockedMessageVisible() { return lockedMessageTicks > 0; }
     public void    tickLockedMessage()      { if (lockedMessageTicks > 0) lockedMessageTicks--; }
@@ -181,7 +193,7 @@ public class World {
         return false;
     }
 
-    /** Collect COIN or KEY at the player's current grid cell. */
+    /** Collect pickup items at the player's current grid cell. */
     public void collectItems() {
         if (gameState != GameState.PLAYING) return;
         int      row  = player.getGridRow();
@@ -192,6 +204,10 @@ public class World {
             player.coins++;
             f.removeItem(row, col);
             soundPlayer.playCoinClink();
+        } else if (item == ItemType.MAP) {
+            player.discoverMapForFloor(player.floor);
+            f.removeItem(row, col);
+            soundPlayer.playMapPickup();
         } else if (item == ItemType.KEY) {
             player.hasKey = true;
             f.removeItem(row, col);

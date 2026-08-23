@@ -177,6 +177,9 @@ public final class Config {
         public final int keyPickupDurationMs;
         public final int keyPickupGapMs;
         public final double keyPickupVolume;
+        public final int mapShuffleDurationMs;
+        public final double mapShuffleVolume;
+        public final double mapShuffleHiPassHz;
         public final double[] coinClinkFreqs;
         public final int coinClinkDurationMs;
         public final int coinClinkGapMs;
@@ -204,6 +207,9 @@ public final class Config {
             keyPickupDurationMs   = getInt("SoundPlayer", "KEY_PICKUP_DURATION_MS");
             keyPickupGapMs        = getInt("SoundPlayer", "KEY_PICKUP_GAP_MS");
             keyPickupVolume       = getDouble("SoundPlayer", "KEY_PICKUP_VOLUME");
+            mapShuffleDurationMs  = getInt("SoundPlayer", "MAP_SHUFFLE_DURATION_MS");
+            mapShuffleVolume      = getDouble("SoundPlayer", "MAP_SHUFFLE_VOLUME");
+            mapShuffleHiPassHz    = getDouble("SoundPlayer", "MAP_SHUFFLE_HIPASS_HZ");
             coinClinkFreqs        = getDoubleArray("SoundPlayer", "COIN_CLINK_FREQS");
             coinClinkDurationMs   = getInt("SoundPlayer", "COIN_CLINK_DURATION_MS");
             coinClinkGapMs        = getInt("SoundPlayer", "COIN_CLINK_GAP_MS");
