@@ -23,7 +23,7 @@ public class SoundPlayer {
     private static final byte[] KEY_PICKUP_PCM = buildPatternPcm(
             Config.SOUND.keyPickupFreqs, Config.SOUND.keyPickupDurationMs,
             Config.SOUND.keyPickupGapMs, Config.SOUND.keyPickupVolume);
-        private static final byte[] MAP_SHUFFLE_PCM = buildPaperShufflePcm(
+    private static final byte[] MAP_SHUFFLE_PCM = buildPaperShufflePcm(
             Config.SOUND.mapShuffleDurationMs,
             Config.SOUND.mapShuffleVolume,
             Config.SOUND.mapShuffleHiPassHz);
@@ -42,9 +42,17 @@ public class SoundPlayer {
         thread.setDaemon(true);
         return thread;
     });
+    private static final ExecutorService SFX_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r, "sfx-audio");
+        thread.setDaemon(true);
+        return thread;
+    });
     private static final AtomicBoolean FOOTSTEP_ACTIVE = new AtomicBoolean(false);
 
-    private static SourceDataLine sharedLine;
+    private static final Object FOOTSTEP_LINE_LOCK = new Object();
+    private static final Object SFX_LINE_LOCK = new Object();
+    private static SourceDataLine footstepLine;
+    private static SourceDataLine sfxLine;
 
     public SoundPlayer() {
     }
@@ -55,7 +63,7 @@ public class SoundPlayer {
         }
         FOOTSTEP_EXECUTOR.submit(() -> {
             try {
-                playPcm(FOOTSTEP_PCM);
+                playPcmOnFootstepChannel(FOOTSTEP_PCM);
             } finally {
                 FOOTSTEP_ACTIVE.set(false);
             }
@@ -63,51 +71,90 @@ public class SoundPlayer {
     }
 
     public void playKeyPickup() {
-        playPcm(KEY_PICKUP_PCM);
+        playSfxAsync(KEY_PICKUP_PCM);
     }
 
     public void playCoinClink() {
-        playPcm(COIN_CLINK_PCM);
+        playSfxAsync(COIN_CLINK_PCM);
     }
 
     public void playMapPickup() {
-        playPcm(MAP_SHUFFLE_PCM);
+        playSfxAsync(MAP_SHUFFLE_PCM);
     }
 
     public void playLadderUp() {
-        playPcm(LADDER_UP_PCM);
+        playSfxAsync(LADDER_UP_PCM);
     }
 
     public void playLadderDown() {
-        playPcm(LADDER_DOWN_PCM);
+        playSfxAsync(LADDER_DOWN_PCM);
     }
 
     public void playTone(double frequencyHz, int durationMs, double volume) {
         playPattern(new double[] { frequencyHz }, durationMs, 0, volume);
     }
 
-    public synchronized void playPattern(double[] frequenciesHz, int durationMs, int gapMs, double volume) {
-        playPcm(buildPatternPcm(frequenciesHz, durationMs, gapMs, volume));
+    public void playPattern(double[] frequenciesHz, int durationMs, int gapMs, double volume) {
+        playSfxAsync(buildPatternPcm(frequenciesHz, durationMs, gapMs, volume));
     }
 
-    private static synchronized void playPcm(byte[] pcm) {
+    private static void playSfxAsync(byte[] pcm) {
+        SFX_EXECUTOR.submit(() -> playPcmOnSfxChannel(pcm));
+    }
+
+    private static void playPcmOnFootstepChannel(byte[] pcm) {
+        synchronized (FOOTSTEP_LINE_LOCK) {
+            try {
+                SourceDataLine line = ensureFootstepLineOpen();
+                line.start();
+                line.write(pcm, 0, pcm.length);
+                line.drain();
+            } catch (Exception ex) {
+                System.err.println("Footstep playback failed: " + ex.getMessage());
+            }
+        }
+    }
+
+    private static void playPcmOnSfxChannel(byte[] pcm) {
+        synchronized (SFX_LINE_LOCK) {
+            try {
+                SourceDataLine line = ensureSfxLineOpen();
+                line.start();
+                line.write(pcm, 0, pcm.length);
+                line.drain();
+            } catch (Exception ex) {
+                System.err.println("SFX playback failed: " + ex.getMessage());
+            }
+        }
+    }
+
+    private static SourceDataLine ensureFootstepLineOpen() throws Exception {
+        if (footstepLine == null || !footstepLine.isOpen()) {
+            footstepLine = (SourceDataLine) AudioSystem.getLine(INFO);
+            // Small fixed buffer helps keep trigger latency low.
+            footstepLine.open(FORMAT, Config.SOUND.lineBufferSize);
+        }
+        return footstepLine;
+    }
+
+    private static SourceDataLine ensureSfxLineOpen() throws Exception {
+        if (sfxLine == null || !sfxLine.isOpen()) {
+            sfxLine = (SourceDataLine) AudioSystem.getLine(INFO);
+            // Keep SFX on a separate channel so pickups do not block footsteps.
+            sfxLine.open(FORMAT, Config.SOUND.lineBufferSize);
+        }
+        return sfxLine;
+    }
+
+    private static void playPcm(byte[] pcm) {
         try {
-            SourceDataLine line = ensureLineOpen();
+            SourceDataLine line = ensureSfxLineOpen();
             line.start();
             line.write(pcm, 0, pcm.length);
             line.drain();
         } catch (Exception ex) {
             System.err.println("Sound playback failed: " + ex.getMessage());
         }
-    }
-
-    private static SourceDataLine ensureLineOpen() throws Exception {
-        if (sharedLine == null || !sharedLine.isOpen()) {
-            sharedLine = (SourceDataLine) AudioSystem.getLine(INFO);
-            // Small fixed buffer helps keep trigger latency low.
-            sharedLine.open(FORMAT, Config.SOUND.lineBufferSize);
-        }
-        return sharedLine;
     }
 
     private static byte[] buildPatternPcm(double[] frequenciesHz, int durationMs, int gapMs, double volume) {

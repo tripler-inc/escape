@@ -228,7 +228,7 @@ public class FirstPersonRenderer {
 
     private void drawMapSprite(Graphics2D g, int width, int height,
                                 int screenX, double transformY) {
-        int halfH = Math.max(3, (int)(height / transformY / 8));
+        int halfH = Math.max(3, Math.min(height / 3, (int)(height / transformY / 8)));
         int halfW = Math.max(4, (int)(halfH * 1.25));
 
         double mapWorldH = 0.52;
@@ -252,24 +252,44 @@ public class FirstPersonRenderer {
             int yBot = Math.min(height - 1, (int)(centerY + bodyBotN * halfH));
             if (yTop >= yBot) continue;
 
-            for (int y = yTop; y <= yBot; y++) {
-                double ny = (double)(y - centerY) / halfH;
+            // Base paper span.
+            g.setColor(MAP_PAPER);
+            g.drawLine(stripe, yTop, stripe, yBot);
 
-                // Two vertical folds + a route line and marker dots.
-                boolean fold = Math.abs(nx + 0.32) < 0.05 || Math.abs(nx - 0.05) < 0.05;
-                boolean route = Math.abs(ny - (0.38 * nx + 0.05)) < 0.035;
-                boolean markA = (nx + 0.48) * (nx + 0.48) + (ny + 0.18) * (ny + 0.18) < 0.018;
-                boolean markB = (nx - 0.44) * (nx - 0.44) + (ny - 0.22) * (ny - 0.22) < 0.018;
-
-                if (route || markA || markB) {
-                    g.setColor(MAP_INK);
-                } else if (fold) {
-                    g.setColor(MAP_FOLD);
-                } else {
-                    g.setColor(MAP_PAPER);
-                }
-                g.drawLine(stripe, y, stripe, y);
+            // Vertical fold accents.
+            if (Math.abs(nx + 0.32) < 0.05 || Math.abs(nx - 0.05) < 0.05) {
+                g.setColor(MAP_FOLD);
+                g.drawLine(stripe, yTop, stripe, yBot);
             }
+
+            // Route stroke.
+            double routeCenterN = 0.38 * nx + 0.05;
+            int routeTop = Math.max(yTop, (int)(centerY + (routeCenterN - 0.035) * halfH));
+            int routeBot = Math.min(yBot, (int)(centerY + (routeCenterN + 0.035) * halfH));
+            if (routeTop <= routeBot) {
+                g.setColor(MAP_INK);
+                g.drawLine(stripe, routeTop, stripe, routeBot);
+            }
+
+            // Marker dots.
+            drawMapMarkerStripe(g, stripe, nx, centerY, halfH, yTop, yBot, -0.48, -0.18, 0.018);
+            drawMapMarkerStripe(g, stripe, nx, centerY, halfH, yTop, yBot,  0.44,  0.22, 0.018);
+        }
+    }
+
+    private void drawMapMarkerStripe(Graphics2D g, int stripe, double nx,
+                                      int centerY, int halfH,
+                                      int yTop, int yBot,
+                                      double centerNx, double centerNy,
+                                      double radiusSq) {
+        double dx = nx - centerNx;
+        if (dx * dx > radiusSq) return;
+        double dy = Math.sqrt(radiusSq - dx * dx);
+        int markerTop = Math.max(yTop, (int)(centerY + (centerNy - dy) * halfH));
+        int markerBot = Math.min(yBot, (int)(centerY + (centerNy + dy) * halfH));
+        if (markerTop <= markerBot) {
+            g.setColor(MAP_INK);
+            g.drawLine(stripe, markerTop, stripe, markerBot);
         }
     }
 
