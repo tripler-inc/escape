@@ -4,13 +4,16 @@ import com.escape.Config;
 import com.escape.maze.Maze;
 import com.escape.player.Player;
 import com.escape.world.Floor;
+import com.escape.world.ItemType;
 import com.escape.world.World;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Stroke;
+import java.util.Map;
 
 /**
  * Renders a top-down 2-D map of the current floor.
@@ -23,6 +26,9 @@ public class MapRenderer {
     private static final Color COL_WALL    = Config.MAP.wall;
     private static final Color COL_PASSAGE = Config.MAP.passage;
     private static final Color COL_PLAYER  = Config.MAP.player;
+    private static final Color COL_LADDER_UP_SEEN = Config.MAP.ladderUpSeen;
+    private static final Color COL_LADDER_DOWN = Config.MAP.ladderDown;
+    private static final Color COL_MARKER_OUTLINE = Config.MAP.markerOutline;
 
     public void render(Graphics2D g, int width, int height, World world) {
         Player player = world.getPlayer();
@@ -61,6 +67,9 @@ public class MapRenderer {
         float playerScreenX = offsetX + player.px * cellSize;
         float playerScreenY = offsetY + player.py * cellSize;
 
+        // ── Ladder markers ───────────────────────────────────────────
+        drawLadderMarkers(g, world, floor, cellSize, offsetX, offsetY);
+
         int dotDiam = Math.max(4, cellSize * 2 / 3);
         g.setColor(COL_PLAYER);
         g.fillOval(
@@ -85,5 +94,36 @@ public class MapRenderer {
         g.setColor(Color.WHITE);
 //        g.drawString("Floor " + (player.floor + 1) + " of 3", 10, 24);
         g.drawString("Floor " + (player.floor + 1), 10, 56);
+    }
+
+    private void drawLadderMarkers(Graphics2D g, World world, Floor floor,
+                                   int cellSize, int offsetX, int offsetY) {
+        boolean showUp = world.hasSeenUpLadder(floor.getFloorIndex());
+        int markerDiam = Math.max(4, cellSize / 2);
+
+        for (Map.Entry<Point, ItemType> entry : floor.getItems().entrySet()) {
+            Point p = entry.getKey();
+            ItemType item = entry.getValue();
+
+            boolean draw = false;
+            Color color = null;
+
+            if (item == ItemType.HOLE_DOWN) {
+                draw = true;
+                color = COL_LADDER_DOWN;
+            } else if (item == ItemType.LADDER_UP && showUp) {
+                draw = true;
+                color = COL_LADDER_UP_SEEN;
+            }
+
+            if (!draw) continue;
+
+            int cx = offsetX + p.x * cellSize + cellSize / 2;
+            int cy = offsetY + p.y * cellSize + cellSize / 2;
+            g.setColor(color);
+            g.fillOval(cx - markerDiam / 2, cy - markerDiam / 2, markerDiam, markerDiam);
+            g.setColor(COL_MARKER_OUTLINE);
+            g.drawOval(cx - markerDiam / 2, cy - markerDiam / 2, markerDiam, markerDiam);
+        }
     }
 }

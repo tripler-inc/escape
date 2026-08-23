@@ -36,9 +36,9 @@ public class FirstPersonRenderer {
     private static final Color LADDER_RUNG    = Config.FP.ladderRung;
     private static final Color HOLE_DARK      = Config.FP.holeDark;
     private static final Color HOLE_EDGE      = Config.FP.holeEdge;
-    private static final Color MAP_PAPER      = new Color(232, 214, 163);
-    private static final Color MAP_FOLD       = new Color(188, 164, 112);
-    private static final Color MAP_INK        = new Color(72, 56, 36);
+    private static final Color MAP_PAPER      = Config.FP.mapPaper;
+    private static final Color MAP_FOLD       = Config.FP.mapFold;
+    private static final Color MAP_INK        = Config.FP.mapInk;
 
     // Base wall brightness for each hit-side
     private static final int BASE_NS = Config.FP.baseNs;
@@ -176,8 +176,8 @@ public class FirstPersonRenderer {
                                 double planeX, double planeY) {
         Floor floor = world.getCurrentFloor();
 
-        // Collect COIN, MAP, KEY, LADDER_UP, HOLE_DOWN with squared player-distance
-        // Entry: { worldX, worldY, dist², itemType.ordinal() }
+        // Collect COIN, MAP, KEY, LADDER_UP, HOLE_DOWN with squared player-distance.
+        // Entry: { worldX, worldY, dist², itemType.ordinal(), gridCol, gridRow }
         List<double[]> sprites = new ArrayList<>();
         for (Map.Entry<Point, ItemType> entry : floor.getItems().entrySet()) {
             ItemType type = entry.getValue();
@@ -191,7 +191,7 @@ public class FirstPersonRenderer {
             double sy = p.y + 0.5;
             double rx = sx - px;
             double ry = sy - py;
-            sprites.add(new double[]{sx, sy, rx * rx + ry * ry, type.ordinal()});
+            sprites.add(new double[]{sx, sy, rx * rx + ry * ry, type.ordinal(), p.x, p.y});
         }
         if (sprites.isEmpty()) return;
 
@@ -215,7 +215,11 @@ public class FirstPersonRenderer {
                 case COIN:      drawCoinSprite  (g, width, height, screenX, transformY); break;
                 case MAP:       drawMapSprite   (g, width, height, screenX, transformY); break;
                 case KEY:       drawKeySprite   (g, width, height, screenX, transformY); break;
-                case LADDER_UP: drawLadderSprite(g, width, height, screenX, transformY); break;
+                case LADDER_UP:
+                    if (drawLadderSprite(g, width, height, screenX, transformY)) {
+                        world.markCurrentFloorUpLadderSeen();
+                    }
+                    break;
                 case HOLE_DOWN: drawHoleSprite  (g, width, height, screenX, transformY); break;
                 default: break;
             }
@@ -400,18 +404,18 @@ public class FirstPersonRenderer {
     // Ladder: two wooden rails + evenly-spaced rungs
     // ─────────────────────────────────────────────────────────────────
 
-    private void drawLadderSprite(Graphics2D g, int width, int height,
+    private boolean drawLadderSprite(Graphics2D g, int width, int height,
                                    int screenX, double transformY) {
         int wallH = Math.abs((int)(height / transformY));
         int halfH = wallH / 2;
         int halfW = Math.max(2, wallH / 5);
-        if (halfH < 2) return;
+        if (halfH < 2) return false;
 
         int centerY = height / 2;
         int topY    = Math.max(0,          centerY - halfH);
         int botY    = Math.min(height - 1, centerY + halfH);
         int totalH  = botY - topY;
-        if (totalH < 2) return;
+        if (totalH < 2) return false;
 
         int startX = Math.max(0,         screenX - halfW);
         int endX   = Math.min(width - 1, screenX + halfW);
@@ -427,8 +431,11 @@ public class FirstPersonRenderer {
             rungBot[r] = Math.min(botY, cy + rungThick);
         }
 
+        boolean rendered = false;
+
         for (int stripe = startX; stripe <= endX; stripe++) {
             if (transformY >= zBuffer[stripe]) continue;
+            rendered = true;
 
             // Rails on the left and right edges only (4 px wide each side)
             if (stripe <= startX + 3 || stripe >= endX - 3) {
@@ -441,6 +448,7 @@ public class FirstPersonRenderer {
                 g.drawLine(stripe, rungTop[r], stripe, rungBot[r]);
             }
         }
+        return rendered;
     }
 
     // ─────────────────────────────────────────────────────────────────

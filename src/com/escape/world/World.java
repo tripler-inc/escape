@@ -34,6 +34,7 @@ public class World {
     private final int     startCol;
     private final int     exitCol;
     private final Point[] ladders;   // connects floor 0 <-> 1 at this grid cell
+    private final boolean[] seenUpLadders;
 
     private int lockedMessageTicks = 0;
     public  static final int LOCKED_MSG_DURATION = Config.WORLD.lockedMsgDuration;
@@ -45,6 +46,7 @@ public class World {
         Random rng = new Random();
         floors  = new Floor[NUM_FLOORS];
         ladders = new Point[NUM_FLOORS - 1];
+        seenUpLadders = new boolean[NUM_FLOORS];
 
         // ── Phase 1: generate all floor mazes ──────────────────────
         for (int i = 0; i < NUM_FLOORS; i++) {
@@ -150,6 +152,17 @@ public class World {
     public int         getExitCol()         { return exitCol; }
     public int         getStartCol()        { return startCol; }
     public boolean     hasMapForCurrentFloor() { return player.hasMapForFloor(player.floor); }
+    public boolean     hasSeenUpLadder(int floorIndex) {
+        return floorIndex >= 0
+                && floorIndex < seenUpLadders.length
+                && seenUpLadders[floorIndex];
+    }
+
+    public void markCurrentFloorUpLadderSeen() {
+        if (player.floor >= 0 && player.floor < seenUpLadders.length) {
+            seenUpLadders[player.floor] = true;
+        }
+    }
 
     public boolean isLockedMessageVisible() { return lockedMessageTicks > 0; }
     public void    tickLockedMessage()      { if (lockedMessageTicks > 0) lockedMessageTicks--; }

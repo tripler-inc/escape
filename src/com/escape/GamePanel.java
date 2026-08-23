@@ -16,6 +16,8 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.HashSet;
@@ -74,15 +76,36 @@ public class GamePanel extends JPanel {
             }
             @Override public void keyReleased(KeyEvent e) {
                 heldKeys.remove(e.getKeyCode());
-                rotSpeed = ROT_SPEED;
-                moveSpeed = MOVE_SPEED;
-            } // reset rotation and move speed
+                // Only reset accel on an axis when neither key on that axis is held.
+                if (!heldKeys.contains(KeyEvent.VK_LEFT) && !heldKeys.contains(KeyEvent.VK_RIGHT)) {
+                    rotSpeed = ROT_SPEED;
+                }
+                if (!heldKeys.contains(KeyEvent.VK_UP) && !heldKeys.contains(KeyEvent.VK_DOWN)) {
+                    moveSpeed = MOVE_SPEED;
+                }
+            }
         });
 
-        new Timer(Config.GAME_PANEL.tickMs, e -> tick()).start();
+        addFocusListener(new FocusAdapter() {
+            @Override public void focusLost(FocusEvent e) {
+                resetInputState();
+            }
+        });
+
+        new Timer(Config.GAME_PANEL.tickMs, e -> safeTick()).start();
     }
 
     // ── Game loop ─────────────────────────────────────────────────────
+
+    private void safeTick() {
+        try {
+            tick();
+        } catch (Throwable t) {
+            resetInputState();
+            System.err.println("Game loop error: " + t.getMessage());
+            t.printStackTrace();
+        }
+    }
 
     private void tick() {
         if (world.getGameState() == World.GameState.PLAYING) {
@@ -105,6 +128,13 @@ public class GamePanel extends JPanel {
 
         if (confetti.isActive()) confetti.update();
         repaint();
+    }
+
+    private void resetInputState() {
+        heldKeys.clear();
+        rotSpeed = ROT_SPEED;
+        moveSpeed = MOVE_SPEED;
+        footstepCooldownMs = 0;
     }
 
     private void handleHeldKeys() {
@@ -159,6 +189,7 @@ public class GamePanel extends JPanel {
 
         // Q: quit confirmation – works in any game state
         if (key == KeyEvent.VK_Q) {
+            resetInputState();
             if (ExitConfirmDialog.confirm(this)) System.exit(0);
             return;
         }

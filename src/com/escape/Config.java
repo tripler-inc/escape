@@ -79,6 +79,9 @@ public final class Config {
         public final Color wall;
         public final Color passage;
         public final Color player;
+        public final Color ladderUpSeen;
+        public final Color ladderDown;
+        public final Color markerOutline;
 
         private MapRendererSection() {
             backgroundColor = getColor("MapRenderer", "BACKGROUND_COLOR");
@@ -86,6 +89,9 @@ public final class Config {
             wall            = getColor("MapRenderer", "COL_WALL");
             passage         = getColor("MapRenderer", "COL_PASSAGE");
             player          = getColor("MapRenderer", "COL_PLAYER");
+            ladderUpSeen    = getColor("MapRenderer", "COL_LADDER_UP_SEEN");
+            ladderDown      = getColor("MapRenderer", "COL_LADDER_DOWN");
+            markerOutline   = getColor("MapRenderer", "COL_MARKER_OUTLINE");
         }
     }
 
@@ -100,6 +106,9 @@ public final class Config {
         public final Color ladderRung;
         public final Color holeDark;
         public final Color holeEdge;
+        public final Color mapPaper;
+        public final Color mapFold;
+        public final Color mapInk;
         public final int baseNs;
         public final int baseEw;
         public final double cameraPlaneScale;
@@ -115,6 +124,9 @@ public final class Config {
             ladderRung        = getColor("FirstPersonRenderer", "COL_LADDER_RUNG");
             holeDark          = getColor("FirstPersonRenderer", "COL_HOLE_DARK");
             holeEdge          = getColor("FirstPersonRenderer", "COL_HOLE_EDGE");
+            mapPaper          = getColor("FirstPersonRenderer", "COL_MAP_PAPER");
+            mapFold           = getColor("FirstPersonRenderer", "COL_MAP_FOLD");
+            mapInk            = getColor("FirstPersonRenderer", "COL_MAP_INK");
             baseNs            = getInt("FirstPersonRenderer", "BASE_NS");
             baseEw            = getInt("FirstPersonRenderer", "BASE_EW");
             cameraPlaneScale  = getDouble("FirstPersonRenderer", "CAMERA_PLANE_SCALE");
