@@ -45,6 +45,20 @@ public class HUDRenderer {
         }
     }
 
+    public void renderMapHint(Graphics2D g, int width) {
+        String message = Config.HUD.hintMapMissing;
+        g.setFont(Config.HUD.mapHintFont);
+        FontMetrics fm = g.getFontMetrics();
+        int tw = fm.stringWidth(message);
+        int tx = (width - tw) / 2;
+        int ty = 40;
+
+        g.setColor(Config.HUD.mapHintFill);
+        g.fillRoundRect(tx - 16, ty - 30, tw + 32, 44, 12, 12);
+        g.setColor(Config.HUD.mapHintText);
+        g.drawString(message, tx, ty);
+    }
+
     // ── Coin counter (top-left) ──────────────────────────────────────
 
     private void drawCoinCounter(Graphics2D g, int count) {

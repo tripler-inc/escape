@@ -35,10 +35,12 @@ public class GamePanel extends JPanel {
     private static final float MOVE_SPEED = Config.GAME_PANEL.moveSpeed;
     private static final float ROT_SPEED  = Config.GAME_PANEL.rotSpeed;
     private static final float MAX_MOVE_SPEED = Config.GAME_PANEL.maxMoveSpeed;
+    private static final float SHIFT_SPEED_MULTIPLIER = 2.0f;
     private static final float MAX_ROT_SPEED  = Config.GAME_PANEL.maxRotSpeed;
     private static final float MOVE_ACCEL = Config.GAME_PANEL.moveAccel;
     private static final float ROT_ACCEL  = Config.GAME_PANEL.rotAccel;
     private static final int FOOTSTEP_INTERVAL_MS = Config.SOUND.footstepIntervalMs;
+    private static final int MAP_HINT_DURATION_MS = Config.GAME_PANEL.mapHintDurationMs;
     private float moveSpeed = MOVE_SPEED; // Set to default
     private float rotSpeed  = ROT_SPEED;  // Set to default
 
@@ -56,6 +58,9 @@ public class GamePanel extends JPanel {
     private final Set<Integer> heldKeys = new HashSet<>();
     private boolean winStarted = false;
     private int footstepCooldownMs = 0;
+    private long runStartMs = -1L;
+    private long runElapsedMs = 0L;
+    private int mapHintRemainingMs = 0;
 
     // ── Constructor ───────────────────────────────────────────────────
     public GamePanel() {
@@ -110,6 +115,12 @@ public class GamePanel extends JPanel {
     private void tick() {
         if (world.getGameState() == World.GameState.PLAYING) {
             handleHeldKeys();
+            if (runStartMs >= 0L) {
+                runElapsedMs = System.currentTimeMillis() - runStartMs;
+            }
+            if (mapHintRemainingMs > 0) {
+                mapHintRemainingMs = Math.max(0, mapHintRemainingMs - Config.GAME_PANEL.tickMs);
+            }
 
             if (renderMode == RenderMode.MAP && !world.hasMapForCurrentFloor()) {
                 renderMode = RenderMode.FIRST_PERSON;
@@ -122,6 +133,10 @@ public class GamePanel extends JPanel {
             world.tickLockedMessage();
         } else if (world.getGameState() == World.GameState.WIN && !winStarted) {
             winStarted = true;
+            if (runStartMs >= 0L) {
+                runElapsedMs = System.currentTimeMillis() - runStartMs;
+            }
+            world.applyExitTimeBonus(runElapsedMs);
             confetti.start();
             audioPlayer.play();
         }
@@ -141,6 +156,11 @@ public class GamePanel extends JPanel {
         Player player = world.getPlayer();
         float dirX = (float) Math.cos(player.angle);
         float dirY = (float) Math.sin(player.angle);
+        boolean shiftHeld = heldKeys.contains(KeyEvent.VK_SHIFT);
+        float currentMaxMoveSpeed = shiftHeld ? MAX_MOVE_SPEED * SHIFT_SPEED_MULTIPLIER : MAX_MOVE_SPEED;
+        if (moveSpeed > currentMaxMoveSpeed) {
+            moveSpeed = currentMaxMoveSpeed;
+        }
         float beforePx = player.px;
         float beforePy = player.py;
         boolean moved = false;
@@ -148,15 +168,15 @@ public class GamePanel extends JPanel {
         if (heldKeys.contains(KeyEvent.VK_UP)) {
             world.tryMove(dirX * moveSpeed, dirY * moveSpeed);
             moved |= player.px != beforePx || player.py != beforePy;
-            if (moveSpeed < MAX_MOVE_SPEED) {
-                moveSpeed += MOVE_ACCEL;
+            if (moveSpeed < currentMaxMoveSpeed) {
+                moveSpeed = Math.min(moveSpeed + MOVE_ACCEL, currentMaxMoveSpeed);
             }
         }
         if (heldKeys.contains(KeyEvent.VK_DOWN)) {
             world.tryMove(-dirX * moveSpeed, -dirY * moveSpeed);
             moved |= player.px != beforePx || player.py != beforePy;
-            if (moveSpeed < MAX_MOVE_SPEED) {
-                moveSpeed += MOVE_ACCEL;
+            if (moveSpeed < currentMaxMoveSpeed) {
+                moveSpeed = Math.min(moveSpeed + MOVE_ACCEL, currentMaxMoveSpeed);
             }
         }
         if (heldKeys.contains(KeyEvent.VK_LEFT)) {
@@ -173,11 +193,20 @@ public class GamePanel extends JPanel {
         }
 
         if (footstepCooldownMs > 0) {
-            footstepCooldownMs -= Config.GAME_PANEL.tickMs;
+            int cooldownStep = shiftHeld
+                    ? Math.max(1, Math.round(Config.GAME_PANEL.tickMs * SHIFT_SPEED_MULTIPLIER))
+                    : Config.GAME_PANEL.tickMs;
+            footstepCooldownMs -= cooldownStep;
         }
         if (moved && footstepCooldownMs <= 0) {
             world.soundPlayer.playFootsteps();
-            footstepCooldownMs = FOOTSTEP_INTERVAL_MS;
+            footstepCooldownMs = shiftHeld
+                    ? Math.max(1, Math.round(FOOTSTEP_INTERVAL_MS / SHIFT_SPEED_MULTIPLIER))
+                    : FOOTSTEP_INTERVAL_MS;
+        }
+        if (moved && runStartMs < 0L) {
+            runStartMs = System.currentTimeMillis();
+            runElapsedMs = 0L;
         }
     }
 
@@ -204,6 +233,8 @@ public class GamePanel extends JPanel {
                     renderMode = RenderMode.FIRST_PERSON;
                 } else if (world.hasMapForCurrentFloor()) {
                     renderMode = RenderMode.MAP;
+                } else {
+                    mapHintRemainingMs = MAP_HINT_DURATION_MS;
                 }
                 break;
         }
@@ -223,14 +254,20 @@ public class GamePanel extends JPanel {
         int w = getWidth();
         int h = getHeight();
 
-        if (renderMode == RenderMode.FIRST_PERSON || world.getGameState() == World.GameState.WIN) {
+        boolean showMapView = world.getGameState() == World.GameState.WIN
+            || renderMode == RenderMode.MAP;
+
+        if (!showMapView) {
             fpRenderer.render(g2, w, h, world);
             if (world.getGameState() == World.GameState.PLAYING) {
                 hudRenderer.renderContextHint(g2, w, h, world);
                 hudRenderer.renderLockedMessage(g2, w, h, world);
+                if (mapHintRemainingMs > 0) {
+                    hudRenderer.renderMapHint(g2, w);
+                }
             }
         } else {
-            mapRenderer.render(g2, w, h, world);
+            mapRenderer.render(g2, w, h, world, runElapsedMs);
             hudRenderer.render(g2, w, h, world);
         }
 

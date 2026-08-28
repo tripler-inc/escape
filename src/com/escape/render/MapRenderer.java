@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * Renders a top-down 2-D map of the current floor.
  * Shows: maze walls, passage cells, player position and direction.
- * Does NOT show coins, key, exit, ladders or holes.
+ * Does NOT show coins or key. Ladders and discovered exit can be marked.
  */
 public class MapRenderer {
 
@@ -29,8 +29,9 @@ public class MapRenderer {
     private static final Color COL_LADDER_UP_SEEN = Config.MAP.ladderUpSeen;
     private static final Color COL_LADDER_DOWN = Config.MAP.ladderDown;
     private static final Color COL_MARKER_OUTLINE = Config.MAP.markerOutline;
+    private static final Color COL_EXIT_SEEN = Config.MAP.exitSeen;
 
-    public void render(Graphics2D g, int width, int height, World world) {
+    public void render(Graphics2D g, int width, int height, World world, long elapsedMs) {
         Player player = world.getPlayer();
         Floor  floor  = world.getCurrentFloor();
         Maze   maze   = floor.getMaze();
@@ -69,6 +70,7 @@ public class MapRenderer {
 
         // ── Ladder markers ───────────────────────────────────────────
         drawLadderMarkers(g, world, floor, cellSize, offsetX, offsetY);
+        drawExitMarker(g, world, floor, cellSize, offsetX, offsetY);
 
         int dotDiam = Math.max(4, cellSize * 2 / 3);
         g.setColor(COL_PLAYER);
@@ -93,7 +95,29 @@ public class MapRenderer {
         g.setFont(new Font("SansSerif", Font.BOLD, 16));
         g.setColor(Color.WHITE);
 //        g.drawString("Floor " + (player.floor + 1) + " of 3", 10, 24);
-        g.drawString("Floor " + (player.floor + 1), 10, 56);
+        g.drawString(Config.MAP.labelFloor + (player.floor + 1), 10, 56);
+        g.drawString(Config.MAP.labelTime + formatElapsed(elapsedMs), 10, 78);
+        g.drawString(Config.MAP.labelScore + world.getScore(), 10, 100);
+        int detailY = 122;
+        if (world.hasExitBonusCalculated()) {
+            g.drawString(Config.MAP.labelTimeBonus + formatSigned(world.getExitBonus()), 10, detailY);
+            detailY += 22;
+        }
+        if (world.getGameState() == World.GameState.WIN && world.hasAllCoinsBonusAwarded()) {
+            g.drawString(Config.MAP.labelAllCoinsBonus + formatSigned(world.getAllCoinsBonus()), 10, detailY);
+        }
+    }
+
+    private String formatSigned(int value) {
+        return value > 0 ? "+" + value : Integer.toString(value);
+    }
+
+    private String formatElapsed(long elapsedMs) {
+        long safeMs = Math.max(0L, elapsedMs);
+        long totalSeconds = safeMs / 1000L;
+        long minutes = totalSeconds / 60L;
+        long seconds = totalSeconds % 60L;
+        return String.format("%02d:%02d", minutes, seconds);
     }
 
     private void drawLadderMarkers(Graphics2D g, World world, Floor floor,
@@ -125,5 +149,25 @@ public class MapRenderer {
             g.setColor(COL_MARKER_OUTLINE);
             g.drawOval(cx - markerDiam / 2, cy - markerDiam / 2, markerDiam, markerDiam);
         }
+    }
+
+    private void drawExitMarker(Graphics2D g, World world, Floor floor,
+                                int cellSize, int offsetX, int offsetY) {
+        int floorIndex = floor.getFloorIndex();
+        if (!world.hasSeenExit(floorIndex) || floorIndex != world.getNumFloors() - 1) {
+            return;
+        }
+
+        int row = 0;
+        int col = world.getExitCol();
+        int cellX = offsetX + col * cellSize;
+        int cellY = offsetY + row * cellSize;
+        int inset = Math.max(1, cellSize / 6);
+        int size = Math.max(2, cellSize - inset * 2);
+
+        g.setColor(COL_EXIT_SEEN);
+        g.fillRect(cellX + inset, cellY + inset, size, size);
+        g.setColor(COL_MARKER_OUTLINE);
+        g.drawRect(cellX + inset, cellY + inset, size, size);
     }
 }

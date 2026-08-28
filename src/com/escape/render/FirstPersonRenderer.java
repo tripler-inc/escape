@@ -146,6 +146,7 @@ public class FirstPersonRenderer {
             // ── Wall colour ───────────────────────────────────────────
             Color wallColor;
             if (isExit) {
+                world.markCurrentFloorExitSeen();
                 // Golden door
                 double shade = Math.max(0.3, 1.0 / (1.0 + perpDist * 0.15));
                 int r = (int)(200 * shade);
@@ -412,23 +413,35 @@ public class FirstPersonRenderer {
         if (halfH < 2) return false;
 
         int centerY = height / 2;
-        int topY    = Math.max(0,          centerY - halfH);
-        int botY    = Math.min(height - 1, centerY + halfH);
-        int totalH  = botY - topY;
+        int topYRaw = centerY - halfH;
+        int botYRaw = centerY + halfH;
+        if (botYRaw < 0 || topYRaw > height - 1) return false;
+
+        int topY    = Math.max(0, topYRaw);
+        int botY    = Math.min(height - 1, botYRaw);
+        int totalH  = botYRaw - topYRaw;
         if (totalH < 2) return false;
 
         int startX = Math.max(0,         screenX - halfW);
         int endX   = Math.min(width - 1, screenX + halfW);
+        int ladderWidth = endX - startX + 1;
+        if (ladderWidth < 2) return false;
 
-        // Pre-compute rung spans (fixed count so gaps stay visible at any distance)
+        int railWidth = Math.max(2, ladderWidth / 10);
+        int rungInset = Math.max(railWidth + 1, ladderWidth / 8);
+        int rungStartX = startX + rungInset;
+        int rungEndX = endX - rungInset;
+
+        // Place rung bands in projected world space first, then clip to the screen.
         int numRungs  = 5;
-        int rungThick = Math.max(1, totalH / (numRungs * 16));
+        int rungThick = Math.max(1, totalH / (numRungs * 20));
         int[] rungTop = new int[numRungs];
         int[] rungBot = new int[numRungs];
         for (int r = 0; r < numRungs; r++) {
-            int cy     = topY + totalH * (r + 1) / (numRungs + 1);
-            rungTop[r] = Math.max(topY, cy - rungThick);
-            rungBot[r] = Math.min(botY, cy + rungThick);
+            double t = (r + 1) / (double) (numRungs + 1);
+            int cyRaw = (int) Math.round(topYRaw + totalH * t);
+            rungTop[r] = Math.max(0, cyRaw - rungThick);
+            rungBot[r] = Math.min(height - 1, cyRaw + rungThick);
         }
 
         boolean rendered = false;
@@ -437,15 +450,20 @@ public class FirstPersonRenderer {
             if (transformY >= zBuffer[stripe]) continue;
             rendered = true;
 
-            // Rails on the left and right edges only (4 px wide each side)
-            if (stripe <= startX + 3 || stripe >= endX - 3) {
+            // Rails on the left and right edges with width tied to sprite width.
+            if (stripe < startX + railWidth || stripe > endX - railWidth) {
                 g.setColor(LADDER_RAIL);
                 g.drawLine(stripe, topY, stripe, botY);
             }
-            // Rungs cross every stripe
-            g.setColor(LADDER_RUNG);
-            for (int r = 0; r < numRungs; r++) {
-                g.drawLine(stripe, rungTop[r], stripe, rungBot[r]);
+
+            // Draw rungs only between rails.
+            if (stripe >= rungStartX && stripe <= rungEndX) {
+                g.setColor(LADDER_RUNG);
+                for (int r = 0; r < numRungs; r++) {
+                    if (rungTop[r] <= rungBot[r]) {
+                        g.drawLine(stripe, rungTop[r], stripe, rungBot[r]);
+                    }
+                }
             }
         }
         return rendered;

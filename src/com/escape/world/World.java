@@ -25,6 +25,10 @@ public class World {
     private static final int ROWS = Config.WORLD.rows;
     private static final int COLS = Config.WORLD.cols;
     private static final int[] ODD = Config.WORLD.odd;
+    private static final int COIN_SCORE = Config.WORLD.scoreCoin;
+    private static final int KEY_SCORE = Config.WORLD.scoreKey;
+    private static final int MAP_SCORE = Config.WORLD.scoreMap;
+    private static final int BONUS_SECONDS_PER_FLOOR = Config.WORLD.bonusSecondsPerFloor;
 
     // ---------------------------------------------------------------
     private final Floor[]   floors;
@@ -35,9 +39,15 @@ public class World {
     private final int     exitCol;
     private final Point[] ladders;   // connects floor 0 <-> 1 at this grid cell
     private final boolean[] seenUpLadders;
+    private final boolean[] seenExits;
 
     private int lockedMessageTicks = 0;
     public  static final int LOCKED_MSG_DURATION = Config.WORLD.lockedMsgDuration;
+    private int score = 0;
+    private int exitBonus = 0;
+    private boolean exitBonusApplied = false;
+    private int totalCoinsPlaced = 0;
+    private boolean allCoinsBonusApplied = false;
 
     public final SoundPlayer soundPlayer = new SoundPlayer();
 
@@ -47,6 +57,7 @@ public class World {
         floors  = new Floor[NUM_FLOORS];
         ladders = new Point[NUM_FLOORS - 1];
         seenUpLadders = new boolean[NUM_FLOORS];
+        seenExits = new boolean[NUM_FLOORS];
 
         // ── Phase 1: generate all floor mazes ──────────────────────
         for (int i = 0; i < NUM_FLOORS; i++) {
@@ -84,6 +95,7 @@ public class World {
                 floors[f].placeItem(p.y, p.x, ItemType.COIN);
                 placed++;
             }
+            totalCoinsPlaced += placed;
         }
 
         // ── Phase 4: place key on the first floor (avoid start/ladders/coins)
@@ -151,11 +163,21 @@ public class World {
     public GameState   getGameState()       { return gameState; }
     public int         getExitCol()         { return exitCol; }
     public int         getStartCol()        { return startCol; }
+    public int         getScore()           { return score; }
+    public int         getExitBonus()       { return exitBonus; }
+    public int         getAllCoinsBonus()   { return totalCoinsPlaced; }
+    public boolean     hasAllCoinsBonusAwarded() { return allCoinsBonusApplied; }
+    public boolean     hasExitBonusCalculated() { return exitBonusApplied; }
     public boolean     hasMapForCurrentFloor() { return player.hasMapForFloor(player.floor); }
     public boolean     hasSeenUpLadder(int floorIndex) {
         return floorIndex >= 0
                 && floorIndex < seenUpLadders.length
                 && seenUpLadders[floorIndex];
+    }
+    public boolean     hasSeenExit(int floorIndex) {
+        return floorIndex >= 0
+                && floorIndex < seenExits.length
+                && seenExits[floorIndex];
     }
 
     public void markCurrentFloorUpLadderSeen() {
@@ -164,8 +186,32 @@ public class World {
         }
     }
 
+    public void markCurrentFloorExitSeen() {
+        if (player.floor >= 0 && player.floor < seenExits.length) {
+            seenExits[player.floor] = true;
+        }
+    }
+
     public boolean isLockedMessageVisible() { return lockedMessageTicks > 0; }
     public void    tickLockedMessage()      { if (lockedMessageTicks > 0) lockedMessageTicks--; }
+
+    public void applyExitTimeBonus(long elapsedMs) {
+        if (exitBonusApplied) return;
+
+        long elapsedSeconds = Math.max(0L, elapsedMs / 1000L);
+        long bonusCapSeconds = (long) NUM_FLOORS * BONUS_SECONDS_PER_FLOOR;
+        long bonus = bonusCapSeconds - elapsedSeconds;
+
+        if (bonus > Integer.MAX_VALUE) {
+            exitBonus = Integer.MAX_VALUE;
+        } else if (bonus < Integer.MIN_VALUE) {
+            exitBonus = Integer.MIN_VALUE;
+        } else {
+            exitBonus = (int) bonus;
+        }
+        score += exitBonus;
+        exitBonusApplied = true;
+    }
 
     // ── game actions ─────────────────────────────────────────────────
 
@@ -215,14 +261,21 @@ public class World {
         ItemType item = f.getItemAt(row, col);
         if (item == ItemType.COIN) {
             player.coins++;
+            score += COIN_SCORE;
+            if (!allCoinsBonusApplied && totalCoinsPlaced > 0 && player.coins >= totalCoinsPlaced) {
+                score += totalCoinsPlaced;
+                allCoinsBonusApplied = true;
+            }
             f.removeItem(row, col);
             soundPlayer.playCoinClink();
         } else if (item == ItemType.MAP) {
             player.discoverMapForFloor(player.floor);
+            score += MAP_SCORE;
             f.removeItem(row, col);
             soundPlayer.playMapPickup();
         } else if (item == ItemType.KEY) {
             player.hasKey = true;
+            score += KEY_SCORE;
             f.removeItem(row, col);
             soundPlayer.playKeyPickup();
         }

@@ -36,6 +36,10 @@ public final class Config {
         public final int cols;
         public final int[] odd;
         public final int lockedMsgDuration;
+        public final int scoreCoin;
+        public final int scoreKey;
+        public final int scoreMap;
+        public final int bonusSecondsPerFloor;
 
         private WorldSection() {
             numFloors          = getInt("World", "NUM_FLOORS");
@@ -44,6 +48,10 @@ public final class Config {
             cols               = getInt("World", "COLS");
             odd                = getIntArray("World", "ODD");
             lockedMsgDuration  = getInt("World", "LOCKED_MSG_DURATION");
+            scoreCoin          = getInt("World", "SCORE_COIN");
+            scoreKey           = getInt("World", "SCORE_KEY");
+            scoreMap           = getInt("World", "SCORE_MAP");
+            bonusSecondsPerFloor = getInt("World", "BONUS_SECONDS_PER_FLOOR");
         }
     }
 
@@ -57,6 +65,7 @@ public final class Config {
         public final float moveAccel;
         public final float rotAccel;
         public final int tickMs;
+        public final int mapHintDurationMs;
         public final Color backgroundColor;
 
         private GamePanelSection() {
@@ -69,6 +78,7 @@ public final class Config {
             moveAccel        = getFloat("GamePanel", "MOVE_ACCEL");
             rotAccel         = getFloat("GamePanel", "ROT_ACCEL");
             tickMs           = getInt("GamePanel", "TICK_MS");
+            mapHintDurationMs = getInt("GamePanel", "MAP_HINT_DURATION_MS");
             backgroundColor  = getColor("GamePanel", "BACKGROUND_COLOR");
         }
     }
@@ -82,6 +92,12 @@ public final class Config {
         public final Color ladderUpSeen;
         public final Color ladderDown;
         public final Color markerOutline;
+        public final Color exitSeen;
+        public final String labelFloor;
+        public final String labelTime;
+        public final String labelScore;
+        public final String labelTimeBonus;
+        public final String labelAllCoinsBonus;
 
         private MapRendererSection() {
             backgroundColor = getColor("MapRenderer", "BACKGROUND_COLOR");
@@ -92,6 +108,12 @@ public final class Config {
             ladderUpSeen    = getColor("MapRenderer", "COL_LADDER_UP_SEEN");
             ladderDown      = getColor("MapRenderer", "COL_LADDER_DOWN");
             markerOutline   = getColor("MapRenderer", "COL_MARKER_OUTLINE");
+            exitSeen        = getColor("MapRenderer", "COL_EXIT_SEEN");
+            labelFloor      = getString("MapRenderer", "LABEL_FLOOR");
+            labelTime       = getString("MapRenderer", "LABEL_TIME");
+            labelScore      = getString("MapRenderer", "LABEL_SCORE");
+            labelTimeBonus  = getString("MapRenderer", "LABEL_TIME_BONUS");
+            labelAllCoinsBonus = getString("MapRenderer", "LABEL_ALL_COINS_BONUS");
         }
     }
 
@@ -152,6 +174,10 @@ public final class Config {
         public final Font lockedFont;
         public final Color lockedFill;
         public final Color lockedText;
+        public final String hintMapMissing;
+        public final Font mapHintFont;
+        public final Color mapHintFill;
+        public final Color mapHintText;
 
         private HUDRendererSection() {
             coin            = getColor("HUDRenderer", "COL_COIN");
@@ -172,6 +198,10 @@ public final class Config {
             lockedFont      = getFont("HUDRenderer", "LOCKED_FONT");
             lockedFill      = getColor("HUDRenderer", "COL_LOCKED_FILL");
             lockedText      = getColor("HUDRenderer", "COL_LOCKED_TEXT");
+            hintMapMissing  = getString("HUDRenderer", "HINT_MAP_MISSING");
+            mapHintFont     = getFont("HUDRenderer", "MAP_HINT_FONT");
+            mapHintFill     = getColor("HUDRenderer", "COL_MAP_HINT_FILL");
+            mapHintText     = getColor("HUDRenderer", "COL_MAP_HINT_TEXT");
         }
     }
 
@@ -450,6 +480,38 @@ public final class Config {
         return parts;
     }
 
+    private static String parseIniValue(String rawValue) {
+        String trimmed = rawValue.trim();
+        if (trimmed.length() >= 2 && trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
+            return unescapeQuotedIni(trimmed.substring(1, trimmed.length() - 1));
+        }
+        return trimmed;
+    }
+
+    private static String unescapeQuotedIni(String value) {
+        StringBuilder out = new StringBuilder(value.length());
+        boolean escaping = false;
+        for (int i = 0; i < value.length(); i++) {
+            char ch = value.charAt(i);
+            if (escaping) {
+                if (ch == '\\' || ch == '"') {
+                    out.append(ch);
+                } else {
+                    out.append('\\').append(ch);
+                }
+                escaping = false;
+            } else if (ch == '\\') {
+                escaping = true;
+            } else {
+                out.append(ch);
+            }
+        }
+        if (escaping) {
+            out.append('\\');
+        }
+        return out.toString();
+    }
+
     // ── INI loader ───────────────────────────────────────────────────
 
     private static Map<String, Map<String, String>> loadIni() {
@@ -459,21 +521,21 @@ public final class Config {
             String current = null;
             String line;
             while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if (line.isEmpty() || line.startsWith("#") || line.startsWith(";")) {
+                String trimmedLine = line.trim();
+                if (trimmedLine.isEmpty() || trimmedLine.startsWith("#") || trimmedLine.startsWith(";")) {
                     continue;
                 }
-                if (line.startsWith("[") && line.endsWith("]")) {
-                    current = line.substring(1, line.length() - 1).trim();
+                if (trimmedLine.startsWith("[") && trimmedLine.endsWith("]")) {
+                    current = trimmedLine.substring(1, trimmedLine.length() - 1).trim();
                     sections.putIfAbsent(current, new LinkedHashMap<>());
                     continue;
                 }
                 int eq = line.indexOf('=');
                 if (eq < 0 || current == null) {
-                    throw new IllegalStateException("Invalid config line: " + line);
+                    throw new IllegalStateException("Invalid config line: " + trimmedLine);
                 }
                 String key = line.substring(0, eq).trim();
-                String value = line.substring(eq + 1).trim();
+                String value = parseIniValue(line.substring(eq + 1));
                 sections.get(current).put(key, value);
             }
             return sections;
