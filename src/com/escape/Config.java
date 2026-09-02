@@ -554,9 +554,14 @@ public final class Config {
     }
 
     private static InputStream openConfigStream() throws IOException {
-        Path classDirConfig = resolveConfigNextToClasses();
-        if (classDirConfig != null && Files.isRegularFile(classDirConfig)) {
-            return Files.newInputStream(classDirConfig);
+        Path externalConfig = resolveExternalConfigPath();
+        if (externalConfig != null && Files.isRegularFile(externalConfig)) {
+            return Files.newInputStream(externalConfig);
+        }
+
+        InputStream resource = Config.class.getResourceAsStream(CONFIG_FILE_NAME);
+        if (resource != null) {
+            return resource;
         }
 
         if (Files.isRegularFile(SRC_FALLBACK_CONFIG)) {
@@ -564,23 +569,29 @@ public final class Config {
         }
 
         throw new IOException(
-                CONFIG_FILE_NAME + " not found next to compiled classes and fallback "
+                CONFIG_FILE_NAME + " not found next to runtime artifact, in classpath resource, and fallback "
                         + SRC_FALLBACK_CONFIG + " is missing");
     }
 
-    private static Path resolveConfigNextToClasses() {
+    private static Path resolveExternalConfigPath() {
         try {
             URL location = Config.class.getProtectionDomain().getCodeSource().getLocation();
             if (location == null) {
                 return null;
             }
             Path codeSource = Paths.get(location.toURI());
-            if (!Files.isDirectory(codeSource)) {
-                return null;
+
+            if (Files.isDirectory(codeSource)) {
+                String packagePath = Config.class.getPackageName().replace('.', java.io.File.separatorChar);
+                Path classDirConfig = codeSource.resolve(packagePath).resolve(CONFIG_FILE_NAME);
+                if (Files.isRegularFile(classDirConfig)) {
+                    return classDirConfig;
+                }
+                return codeSource.resolve(CONFIG_FILE_NAME);
             }
 
-            String packagePath = Config.class.getPackageName().replace('.', java.io.File.separatorChar);
-            return codeSource.resolve(packagePath).resolve(CONFIG_FILE_NAME);
+            Path jarParent = codeSource.getParent();
+            return jarParent == null ? null : jarParent.resolve(CONFIG_FILE_NAME);
         } catch (URISyntaxException | SecurityException | NullPointerException ex) {
             return null;
         }
