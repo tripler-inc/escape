@@ -8,6 +8,7 @@ import com.escape.render.MapRenderer;
 import com.escape.render.RenderMode;
 import com.escape.ui.ConfettiAnimation;
 import com.escape.ui.ExitConfirmDialog;
+import com.escape.ui.HelpOverlay;
 import com.escape.world.World;
 
 import javax.swing.JPanel;
@@ -53,6 +54,7 @@ public class GamePanel extends JPanel {
     private final HUDRenderer         hudRenderer;
     private final ConfettiAnimation   confetti;
     private final AudioPlayer         audioPlayer;
+    private final HelpOverlay         helpOverlay;
 
     // ── Input state ───────────────────────────────────────────────────
     private final Set<Integer> heldKeys = new HashSet<>();
@@ -60,7 +62,9 @@ public class GamePanel extends JPanel {
     private int footstepCooldownMs = 0;
     private long runStartMs = -1L;
     private long runElapsedMs = 0L;
+    private long helpOpenedAtMs = -1L;
     private int mapHintRemainingMs = 0;
+    private boolean helpVisible = false;
 
     // ── Constructor ───────────────────────────────────────────────────
     public GamePanel() {
@@ -74,6 +78,7 @@ public class GamePanel extends JPanel {
         hudRenderer = new HUDRenderer();
         confetti    = new ConfettiAnimation(WIDTH);
         audioPlayer = new AudioPlayer();
+        helpOverlay = new HelpOverlay();
 
         addKeyListener(new KeyAdapter() {
             @Override public void keyPressed(KeyEvent e)  {
@@ -114,23 +119,25 @@ public class GamePanel extends JPanel {
 
     private void tick() {
         if (world.getGameState() == World.GameState.PLAYING) {
-            handleHeldKeys();
-            if (runStartMs >= 0L) {
-                runElapsedMs = System.currentTimeMillis() - runStartMs;
-            }
-            if (mapHintRemainingMs > 0) {
-                mapHintRemainingMs = Math.max(0, mapHintRemainingMs - Config.GAME_PANEL.tickMs);
-            }
+            if (!helpVisible) {
+                handleHeldKeys();
+                if (runStartMs >= 0L) {
+                    runElapsedMs = System.currentTimeMillis() - runStartMs;
+                }
+                if (mapHintRemainingMs > 0) {
+                    mapHintRemainingMs = Math.max(0, mapHintRemainingMs - Config.GAME_PANEL.tickMs);
+                }
 
-            if (renderMode == RenderMode.MAP && !world.hasMapForCurrentFloor()) {
-                renderMode = RenderMode.FIRST_PERSON;
-            }
+                if (renderMode == RenderMode.MAP && !world.hasMapForCurrentFloor()) {
+                    renderMode = RenderMode.FIRST_PERSON;
+                }
 
-            // only collect items when in first-person mode
-            if (renderMode == RenderMode.FIRST_PERSON) {
-                world.collectItems();
+                // only collect items when in first-person mode
+                if (renderMode == RenderMode.FIRST_PERSON) {
+                    world.collectItems();
+                }
+                world.tickLockedMessage();
             }
-            world.tickLockedMessage();
         } else if (world.getGameState() == World.GameState.WIN && !winStarted) {
             winStarted = true;
             if (runStartMs >= 0L) {
@@ -214,7 +221,27 @@ public class GamePanel extends JPanel {
 
     private void onKeyPressed(KeyEvent e) {
         int key = e.getKeyCode();
-        heldKeys.add(key);
+
+        if (key == KeyEvent.VK_ESCAPE && helpVisible) {
+            if (helpOpenedAtMs >= 0L && runStartMs >= 0L) {
+                long pausedMs = Math.max(0L, System.currentTimeMillis() - helpOpenedAtMs);
+                runStartMs += pausedMs;
+            }
+            helpOpenedAtMs = -1L;
+            helpVisible = false;
+            resetInputState();
+            return;
+        }
+
+        if (key == KeyEvent.VK_H) {
+            helpOverlay.reload();
+            if (!helpVisible) {
+                helpOpenedAtMs = System.currentTimeMillis();
+            }
+            helpVisible = true;
+            resetInputState();
+            return;
+        }
 
         // Q: quit confirmation – works in any game state
         if (key == KeyEvent.VK_Q) {
@@ -222,6 +249,10 @@ public class GamePanel extends JPanel {
             if (ExitConfirmDialog.confirm(this)) System.exit(0);
             return;
         }
+
+        if (helpVisible) return;
+
+        heldKeys.add(key);
 
         if (world.getGameState() != World.GameState.PLAYING) return;
 
@@ -273,6 +304,10 @@ public class GamePanel extends JPanel {
 
         if (confetti.isActive()) {
             confetti.draw(g2, w, h);
+        }
+
+        if (helpVisible) {
+            helpOverlay.draw(g2, w, h);
         }
     }
 }
