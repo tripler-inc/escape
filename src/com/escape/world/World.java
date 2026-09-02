@@ -79,7 +79,7 @@ public class World {
         for (int i = 0; i < NUM_FLOORS - 1; i++) {
             Set<Point> exclude = new HashSet<>();
             exclude.add(new Point(startCol, ROWS)); // avoid start cell
-            ladders[i] = pickRoomCell(rng, floors[i].getMaze(), exclude);
+            ladders[i] = pickEmptyRoomCell(rng, floors[i], exclude);
             floors[i].placeItem(ladders[i].y, ladders[i].x, ItemType.LADDER_UP);
             floors[i+1].placeItem(ladders[i].y, ladders[i].x, ItemType.HOLE_DOWN);
         }
@@ -139,6 +139,16 @@ public class World {
             if (!excluded.contains(p)) return p;
         }
         return cells.get(0); // should never be needed
+    }
+
+    private Point pickEmptyRoomCell(Random rng, Floor floor, Set<Point> excluded) {
+        List<Point> cells = shuffledRoomCells(rng, floor.getMaze());
+        for (Point p : cells) {
+            if (excluded.contains(p)) continue;
+            if (floor.hasItem(p.y, p.x)) continue;
+            return p;
+        }
+        return pickRoomCell(rng, floor.getMaze(), excluded);
     }
 
     private List<Point> shuffledRoomCells(Random rng, Maze maze) {
