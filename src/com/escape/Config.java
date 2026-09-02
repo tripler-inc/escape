@@ -6,7 +6,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -15,6 +20,10 @@ import java.util.Map;
  * typed fields.  Values are the single source of truth for tunables.
  */
 public final class Config {
+
+    private static final String CONFIG_FILE_NAME = "config.ini";
+    private static final Path SRC_FALLBACK_CONFIG =
+            Paths.get("src", "com", "escape", "config.copy.ini");
 
     private static final Map<String, Map<String, String>> DATA = loadIni();
 
@@ -545,11 +554,35 @@ public final class Config {
     }
 
     private static InputStream openConfigStream() throws IOException {
-        InputStream resource = Config.class.getResourceAsStream("config.ini");
-        if (resource != null) {
-            return resource;
+        Path classDirConfig = resolveConfigNextToClasses();
+        if (classDirConfig != null && Files.isRegularFile(classDirConfig)) {
+            return Files.newInputStream(classDirConfig);
         }
 
-        throw new IOException("config.ini not found on the classpath next to com.escape.Config");
+        if (Files.isRegularFile(SRC_FALLBACK_CONFIG)) {
+            return Files.newInputStream(SRC_FALLBACK_CONFIG);
+        }
+
+        throw new IOException(
+                CONFIG_FILE_NAME + " not found next to compiled classes and fallback "
+                        + SRC_FALLBACK_CONFIG + " is missing");
+    }
+
+    private static Path resolveConfigNextToClasses() {
+        try {
+            URL location = Config.class.getProtectionDomain().getCodeSource().getLocation();
+            if (location == null) {
+                return null;
+            }
+            Path codeSource = Paths.get(location.toURI());
+            if (!Files.isDirectory(codeSource)) {
+                return null;
+            }
+
+            String packagePath = Config.class.getPackageName().replace('.', java.io.File.separatorChar);
+            return codeSource.resolve(packagePath).resolve(CONFIG_FILE_NAME);
+        } catch (URISyntaxException | SecurityException | NullPointerException ex) {
+            return null;
+        }
     }
 }
