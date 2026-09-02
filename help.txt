@@ -1,0 +1,34 @@
+ESCAPE HELP
+
+GOAL
+Collect enough resources to survive all floors, find the key, and escape through the exit door on the top floor.
+
+RULES
+- The maze has multiple floors.
+- The exit is on the top floor and starts locked.
+- You must find the key before you can exit.
+- Coins, maps, and the key are picked up only in first-person view.
+- Map view can be toggled only after you find the map for your current floor.
+- Ladders and the exit are marked on the map only after they have been seen.
+
+CONTROLS
+- Arrow Up: Move forward
+- Arrow Down: Move backward
+- Arrow Left: Turn left
+- Arrow Right: Turn right
+- Shift: Run (faster forward and back movement)
+- U: Climb up when standing on a ladder
+- D: Descend when standing on a down ladder hole
+- M: Toggle map view (after finding map for this floor)
+- H: Show this help overlay
+- Esc: Close this help overlay
+- Q: Quit (with confirmation)
+
+SCORING
+- Coin pickup: +SCORE_COIN points
+- Key pickup: +SCORE_KEY points
+- Map pickup: +SCORE_MAP points
+- All-coins bonus: +total number of coins (awarded once when final coin is collected)
+- Exit time bonus: (Number of floors x Bonus seconds per floor) - elapsed seconds
+  (NUM_FLOORS * BONUS_SECONDS_PER_FLOOR) - elapsed seconds
+  This bonus can be negative and is applied at exit.
