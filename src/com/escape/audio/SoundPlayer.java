@@ -146,17 +146,6 @@ public class SoundPlayer {
         return sfxLine;
     }
 
-    private static void playPcm(byte[] pcm) {
-        try {
-            SourceDataLine line = ensureSfxLineOpen();
-            line.start();
-            line.write(pcm, 0, pcm.length);
-            line.drain();
-        } catch (Exception ex) {
-            System.err.println("Sound playback failed: " + ex.getMessage());
-        }
-    }
-
     private static byte[] buildPatternPcm(double[] frequenciesHz, int durationMs, int gapMs, double volume) {
         int toneSamples = (int) ((durationMs / 1000.0) * SAMPLE_RATE);
         int gapSamples = gapMs > 0 ? (int) ((gapMs / 1000.0) * SAMPLE_RATE) : 0;
