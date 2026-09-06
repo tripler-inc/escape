@@ -84,7 +84,27 @@ public class World {
             floors[i+1].placeItem(ladders[i].y, ladders[i].x, ItemType.HOLE_DOWN);
         }
 
-        // ── Phase 3: place coins per floor ──────────────────────────
+        // ── Phase 3: place key on the first floor ────────────────────
+        List<Point> keyCells = shuffledRoomCells(rng, floors[0].getMaze());
+        for (Point p : keyCells) {
+            if (isReserved(p, 0)) continue;
+            if (floors[0].hasItem(p.y, p.x)) continue;
+            floors[0].placeItem(p.y, p.x, ItemType.KEY);
+            break;
+        }
+
+        // ── Phase 4: place one map on each floor
+        for (int f = 0; f < NUM_FLOORS; f++) {
+            List<Point> mapCells = shuffledRoomCells(rng, floors[f].getMaze());
+            for (Point p : mapCells) {
+                if (isReserved(p, f)) continue;
+                if (floors[f].hasItem(p.y, p.x)) continue;
+                floors[f].placeItem(p.y, p.x, ItemType.MAP);
+                break;
+            }
+        }
+
+        // ── Phase 5: place coins per floor in remaining open cells ──
         for (int f = 0; f < NUM_FLOORS; f++) {
             int placed = 0;
             List<Point> cells = shuffledRoomCells(rng, floors[f].getMaze());
@@ -96,26 +116,6 @@ public class World {
                 placed++;
             }
             totalCoinsPlaced += placed;
-        }
-
-        // ── Phase 4: place key on the first floor (avoid start/ladders/coins)
-        List<Point> keyCells = shuffledRoomCells(rng, floors[0].getMaze());
-        for (Point p : keyCells) {
-            if (isReserved(p, 0)) continue;
-            if (floors[0].hasItem(p.y, p.x)) continue;
-            floors[0].placeItem(p.y, p.x, ItemType.KEY);
-            break;
-        }
-
-        // ── Phase 5: place one map on each floor
-        for (int f = 0; f < NUM_FLOORS; f++) {
-            List<Point> mapCells = shuffledRoomCells(rng, floors[f].getMaze());
-            for (Point p : mapCells) {
-                if (isReserved(p, f)) continue;
-                if (floors[f].hasItem(p.y, p.x)) continue;
-                floors[f].placeItem(p.y, p.x, ItemType.MAP);
-                break;
-            }
         }
 
         // ── Create player ────────────────────────────────────────────

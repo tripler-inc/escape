@@ -6,7 +6,13 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,17 +31,26 @@ import java.util.regex.Pattern;
  */
 public class HelpOverlay {
 
-    private static final Path HELP_FILE = Paths.get("help.txt");
+    private static final String HELP_FILE_NAME = "help.txt";
+    private static final Path DEV_FALLBACK_HELP = Paths.get(HELP_FILE_NAME);
 
-    private static final Color DIM_BG = new Color(0, 0, 0, 180);
-    private static final Color PANEL_BG = new Color(15, 18, 26, 225);
-    private static final Color PANEL_BORDER = new Color(220, 220, 220, 210);
-    private static final Color TEXT_COLOR = new Color(245, 245, 245);
-    private static final Font TEXT_FONT = new Font("Monospaced", Font.PLAIN, 18);
+    private static final Color DIM_BG = Config.HELP.dimBg;
+    private static final Color PANEL_BG = Config.HELP.panelBg;
+    private static final Color PANEL_BORDER = Config.HELP.panelBorder;
+    private static final Color TEXT_COLOR = Config.HELP.textColor;
+    private static final Font TEXT_FONT = Config.HELP.textFont;
+    private static final String START_PROMPT = Config.HELP.startupPromptText;
+    private static final Font START_PROMPT_FONT = Config.HELP.startupPromptFont;
+    private static final Color START_PROMPT_BG = Config.HELP.startupPromptBg;
+    private static final Color START_PROMPT_BORDER = Config.HELP.startupPromptBorder;
+    private static final Color START_PROMPT_TEXT = Config.HELP.startupPromptTextColor;
+    private static final int START_PROMPT_MIN_ALPHA = Config.HELP.startupPromptMinAlpha;
+    private static final int START_PROMPT_MAX_ALPHA = Config.HELP.startupPromptMaxAlpha;
+    private static final int START_PROMPT_PULSE_MS = Math.max(1, Config.HELP.startupPromptPulseMs);
 
-    private static final int OUTER_MARGIN = 28;
-    private static final int PANEL_PADDING_X = 20;
-    private static final int PANEL_PADDING_Y = 20;
+    private static final int OUTER_MARGIN = Config.HELP.outerMargin;
+    private static final int PANEL_PADDING_X = Config.HELP.panelPaddingX;
+    private static final int PANEL_PADDING_Y = Config.HELP.panelPaddingY;
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\b[A-Z][A-Z0-9_]*\\b");
     private static final Map<String, String> PLACEHOLDER_VALUES = buildPlaceholderValues();
 
@@ -84,19 +99,78 @@ public class HelpOverlay {
         }
     }
 
+    public void drawStartupPrompt(Graphics2D g, int width, int height) {
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                           RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setFont(START_PROMPT_FONT);
+        FontMetrics fm = g.getFontMetrics();
+
+        long now = System.currentTimeMillis();
+        double cycle = (now % START_PROMPT_PULSE_MS) / (double) START_PROMPT_PULSE_MS;
+        double wave = 0.5 + 0.5 * Math.sin(cycle * Math.PI * 2.0);
+        int minAlpha = Math.max(0, Math.min(255, START_PROMPT_MIN_ALPHA));
+        int maxAlpha = Math.max(minAlpha, Math.min(255, START_PROMPT_MAX_ALPHA));
+        int alphaRange = maxAlpha - minAlpha;
+        int animatedAlpha = minAlpha + (int) Math.round(alphaRange * wave);
+
+        int textW = fm.stringWidth(START_PROMPT);
+        int textH = fm.getAscent();
+        int padX = Config.HELP.startupPromptPadX;
+        int padY = Config.HELP.startupPromptPadY;
+        int boxW = textW + padX * 2;
+        int boxH = textH + padY * 2;
+        int boxX = (width - boxW) / 2;
+        int boxY = (height - boxH) / 2;
+        int textX = boxX + padX;
+        int textY = boxY + padY + fm.getAscent() + Config.HELP.startupPromptBaselineOffset;
+
+        g.setColor(START_PROMPT_BG);
+        g.fillRoundRect(boxX, boxY, boxW, boxH, Config.HELP.startupPromptRadius, Config.HELP.startupPromptRadius);
+        g.setColor(withAlpha(START_PROMPT_BORDER, Math.min(255, animatedAlpha + 10)));
+        g.drawRoundRect(boxX, boxY, boxW, boxH, Config.HELP.startupPromptRadius, Config.HELP.startupPromptRadius);
+        g.setColor(withAlpha(START_PROMPT_TEXT, animatedAlpha));
+        g.drawString(START_PROMPT, textX, textY);
+    }
+
+    private static Color withAlpha(Color base, int alpha) {
+        int clamped = Math.max(0, Math.min(255, alpha));
+        return new Color(base.getRed(), base.getGreen(), base.getBlue(), clamped);
+    }
+
     private static List<String> loadLines() {
-        if (Files.exists(HELP_FILE)) {
-            try {
-                List<String> fileLines = Files.readAllLines(HELP_FILE, StandardCharsets.UTF_8);
+        try {
+            // Prefer a user-editable file next to the running artifact so the game can be
+            // customized without rebuilding the jar. Only fall back to the packaged resource
+            // when no external file exists.
+            Path externalHelp = resolveExternalHelpPath();
+            if (externalHelp != null && Files.isRegularFile(externalHelp)) {
+                List<String> fileLines = Files.readAllLines(externalHelp, StandardCharsets.UTF_8);
                 if (!fileLines.isEmpty()) {
                     return substitutePlaceholders(fileLines);
                 }
-            } catch (IOException ex) {
-                return substitutePlaceholders(Arrays.asList(
-                        "HELP FILE ERROR",
-                        "Could not read help.txt",
-                        ex.getMessage() == null ? "" : ex.getMessage()));
             }
+
+            InputStream resource = HelpOverlay.class.getClassLoader().getResourceAsStream(HELP_FILE_NAME);
+            if (resource != null) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource, StandardCharsets.UTF_8))) {
+                    List<String> resourceLines = reader.lines().toList();
+                    if (!resourceLines.isEmpty()) {
+                        return substitutePlaceholders(resourceLines);
+                    }
+                }
+            }
+
+            if (Files.isRegularFile(DEV_FALLBACK_HELP)) {
+                List<String> devLines = Files.readAllLines(DEV_FALLBACK_HELP, StandardCharsets.UTF_8);
+                if (!devLines.isEmpty()) {
+                    return substitutePlaceholders(devLines);
+                }
+            }
+        } catch (IOException ex) {
+            return substitutePlaceholders(Arrays.asList(
+                    "HELP FILE ERROR",
+                    "Could not read help.txt",
+                    ex.getMessage() == null ? "" : ex.getMessage()));
         }
 
         List<String> fallback = new ArrayList<>();
@@ -105,6 +179,30 @@ public class HelpOverlay {
         fallback.add("Create a help.txt file in the game folder to edit this screen.");
         fallback.add("Press Esc to close help.");
         return substitutePlaceholders(fallback);
+    }
+
+    private static Path resolveExternalHelpPath() {
+        try {
+            URL location = HelpOverlay.class.getProtectionDomain().getCodeSource().getLocation();
+            if (location == null) {
+                return null;
+            }
+            Path codeSource = Paths.get(location.toURI());
+
+            if (Files.isDirectory(codeSource)) {
+                String packagePath = HelpOverlay.class.getPackageName().replace('.', java.io.File.separatorChar);
+                Path classDirHelp = codeSource.resolve(packagePath).resolve(HELP_FILE_NAME);
+                if (Files.isRegularFile(classDirHelp)) {
+                    return classDirHelp;
+                }
+                return codeSource.resolve(HELP_FILE_NAME);
+            }
+
+            Path jarParent = codeSource.getParent();
+            return jarParent == null ? null : jarParent.resolve(HELP_FILE_NAME);
+        } catch (URISyntaxException | SecurityException | NullPointerException ex) {
+            return null;
+        }
     }
 
     private static List<String> substitutePlaceholders(List<String> sourceLines) {

@@ -22,8 +22,6 @@ import java.util.Map;
 public final class Config {
 
     private static final String CONFIG_FILE_NAME = "config.ini";
-    private static final Path SRC_FALLBACK_CONFIG =
-            Paths.get("src", "com", "escape", "config.copy.ini");
 
     private static final Map<String, Map<String, String>> DATA = loadIni();
 
@@ -31,7 +29,9 @@ public final class Config {
     public static final GamePanelSection GAME_PANEL = new GamePanelSection();
     public static final MapRendererSection MAP = new MapRendererSection();
     public static final FirstPersonRendererSection FP = new FirstPersonRendererSection();
+    public static final FirstPersonItemsSection FPI = new FirstPersonItemsSection();
     public static final HUDRendererSection HUD = new HUDRendererSection();
+    public static final HelpOverlaySection HELP = new HelpOverlaySection();
     public static final SoundPlayerSection SOUND = new SoundPlayerSection();
     public static final AudioPlayerSection AUDIO = new AudioPlayerSection();
     public static final ConfettiSection CONFETTI = new ConfettiSection();
@@ -107,6 +107,7 @@ public final class Config {
         public final String labelScore;
         public final String labelTimeBonus;
         public final String labelAllCoinsBonus;
+        public final Font labelFont;
 
         private MapRendererSection() {
             backgroundColor = getColor("MapRenderer", "BACKGROUND_COLOR");
@@ -123,6 +124,7 @@ public final class Config {
             labelScore      = getString("MapRenderer", "LABEL_SCORE");
             labelTimeBonus  = getString("MapRenderer", "LABEL_TIME_BONUS");
             labelAllCoinsBonus = getString("MapRenderer", "LABEL_ALL_COINS_BONUS");
+            labelFont       = getFont("MapRenderer", "LABEL_FONT");
         }
     }
 
@@ -161,6 +163,20 @@ public final class Config {
             baseNs            = getInt("FirstPersonRenderer", "BASE_NS");
             baseEw            = getInt("FirstPersonRenderer", "BASE_EW");
             cameraPlaneScale  = getDouble("FirstPersonRenderer", "CAMERA_PLANE_SCALE");
+        }
+    }
+
+    public static final class FirstPersonItemsSection {
+        public final double coinWorldHeight;
+        public final double keyWorldHeight;
+        public final double mapWorldHeight;
+        public final double holeWorldHeightOffset;
+
+        private FirstPersonItemsSection() {
+            coinWorldHeight      = getDouble("FirstPersonItems", "COIN_WORLD_HEIGHT");
+            keyWorldHeight       = getDouble("FirstPersonItems", "KEY_WORLD_HEIGHT");
+            mapWorldHeight       = getDouble("FirstPersonItems", "MAP_WORLD_HEIGHT");
+            holeWorldHeightOffset = getDouble("FirstPersonItems", "HOLE_WORLD_HEIGHT_OFFSET");
         }
     }
 
@@ -273,6 +289,52 @@ public final class Config {
             ladderDownDurationMs  = getInt("SoundPlayer", "LADDER_DOWN_DURATION_MS");
             ladderDownGapMs       = getInt("SoundPlayer", "LADDER_DOWN_GAP_MS");
             ladderDownVolume      = getDouble("SoundPlayer", "LADDER_DOWN_VOLUME");
+        }
+    }
+
+    public static final class HelpOverlaySection {
+        public final Color dimBg;
+        public final Color panelBg;
+        public final Color panelBorder;
+        public final Color textColor;
+        public final Font textFont;
+        public final int outerMargin;
+        public final int panelPaddingX;
+        public final int panelPaddingY;
+        public final String startupPromptText;
+        public final Font startupPromptFont;
+        public final Color startupPromptBg;
+        public final Color startupPromptBorder;
+        public final Color startupPromptTextColor;
+        public final int startupPromptMinAlpha;
+        public final int startupPromptMaxAlpha;
+        public final int startupPromptPulseMs;
+        public final int startupPromptPadX;
+        public final int startupPromptPadY;
+        public final int startupPromptRadius;
+        public final int startupPromptBaselineOffset;
+
+        private HelpOverlaySection() {
+            dimBg                      = getColor("HelpOverlay", "COL_DIM_BG");
+            panelBg                    = getColor("HelpOverlay", "COL_PANEL_BG");
+            panelBorder                = getColor("HelpOverlay", "COL_PANEL_BORDER");
+            textColor                  = getColor("HelpOverlay", "COL_TEXT");
+            textFont                   = getFont("HelpOverlay", "TEXT_FONT");
+            outerMargin                = getInt("HelpOverlay", "OUTER_MARGIN");
+            panelPaddingX              = getInt("HelpOverlay", "PANEL_PADDING_X");
+            panelPaddingY              = getInt("HelpOverlay", "PANEL_PADDING_Y");
+            startupPromptText          = getString("HelpOverlay", "START_PROMPT_TEXT");
+            startupPromptFont          = getFont("HelpOverlay", "START_PROMPT_FONT");
+            startupPromptBg            = getColor("HelpOverlay", "COL_START_PROMPT_BG");
+            startupPromptBorder        = getColor("HelpOverlay", "COL_START_PROMPT_BORDER");
+            startupPromptTextColor     = getColor("HelpOverlay", "COL_START_PROMPT_TEXT");
+            startupPromptMinAlpha      = getInt("HelpOverlay", "START_PROMPT_MIN_ALPHA");
+            startupPromptMaxAlpha      = getInt("HelpOverlay", "START_PROMPT_MAX_ALPHA");
+            startupPromptPulseMs       = getInt("HelpOverlay", "START_PROMPT_PULSE_MS");
+            startupPromptPadX          = getInt("HelpOverlay", "START_PROMPT_PAD_X");
+            startupPromptPadY          = getInt("HelpOverlay", "START_PROMPT_PAD_Y");
+            startupPromptRadius        = getInt("HelpOverlay", "START_PROMPT_RADIUS");
+            startupPromptBaselineOffset = getInt("HelpOverlay", "START_PROMPT_BASELINE_OFFSET");
         }
     }
 
@@ -564,13 +626,7 @@ public final class Config {
             return resource;
         }
 
-        if (Files.isRegularFile(SRC_FALLBACK_CONFIG)) {
-            return Files.newInputStream(SRC_FALLBACK_CONFIG);
-        }
-
-        throw new IOException(
-                CONFIG_FILE_NAME + " not found next to runtime artifact, in classpath resource, and fallback "
-                        + SRC_FALLBACK_CONFIG + " is missing");
+        throw new IOException(CONFIG_FILE_NAME + " not found next to runtime artifact or in classpath resource");
     }
 
     private static Path resolveExternalConfigPath() {

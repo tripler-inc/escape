@@ -65,6 +65,7 @@ public class GamePanel extends JPanel {
     private long helpOpenedAtMs = -1L;
     private int mapHintRemainingMs = 0;
     private boolean helpVisible = false;
+    private boolean waitingForStart = true;
 
     // ── Constructor ───────────────────────────────────────────────────
     public GamePanel() {
@@ -79,6 +80,10 @@ public class GamePanel extends JPanel {
         confetti    = new ConfettiAnimation(WIDTH);
         audioPlayer = new AudioPlayer();
         helpOverlay = new HelpOverlay();
+
+        // Startup screen: show help immediately and wait for Esc to begin the run.
+        helpOverlay.reload();
+        helpVisible = true;
 
         addKeyListener(new KeyAdapter() {
             @Override public void keyPressed(KeyEvent e)  {
@@ -211,10 +216,6 @@ public class GamePanel extends JPanel {
                     ? Math.max(1, Math.round(FOOTSTEP_INTERVAL_MS / SHIFT_SPEED_MULTIPLIER))
                     : FOOTSTEP_INTERVAL_MS;
         }
-        if (moved && runStartMs < 0L) {
-            runStartMs = System.currentTimeMillis();
-            runElapsedMs = 0L;
-        }
     }
 
     // ── Key events ────────────────────────────────────────────────────
@@ -223,6 +224,16 @@ public class GamePanel extends JPanel {
         int key = e.getKeyCode();
 
         if (key == KeyEvent.VK_ESCAPE && helpVisible) {
+            if (waitingForStart) {
+                waitingForStart = false;
+                helpOpenedAtMs = -1L;
+                helpVisible = false;
+                runStartMs = System.currentTimeMillis();
+                runElapsedMs = 0L;
+                resetInputState();
+                return;
+            }
+
             if (helpOpenedAtMs >= 0L && runStartMs >= 0L) {
                 long pausedMs = Math.max(0L, System.currentTimeMillis() - helpOpenedAtMs);
                 runStartMs += pausedMs;
@@ -234,10 +245,23 @@ public class GamePanel extends JPanel {
         }
 
         if (key == KeyEvent.VK_H) {
-            helpOverlay.reload();
-            if (!helpVisible) {
-                helpOpenedAtMs = System.currentTimeMillis();
+            if (helpVisible) {
+                // Keep startup flow explicit: Esc starts the run from the intro overlay.
+                if (waitingForStart) {
+                    return;
+                }
+                if (helpOpenedAtMs >= 0L && runStartMs >= 0L) {
+                    long pausedMs = Math.max(0L, System.currentTimeMillis() - helpOpenedAtMs);
+                    runStartMs += pausedMs;
+                }
+                helpOpenedAtMs = -1L;
+                helpVisible = false;
+                resetInputState();
+                return;
             }
+
+            helpOverlay.reload();
+            helpOpenedAtMs = System.currentTimeMillis();
             helpVisible = true;
             resetInputState();
             return;
@@ -308,6 +332,9 @@ public class GamePanel extends JPanel {
 
         if (helpVisible) {
             helpOverlay.draw(g2, w, h);
+            if (waitingForStart) {
+                helpOverlay.drawStartupPrompt(g2, w, h);
+            }
         }
     }
 }
