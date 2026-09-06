@@ -236,7 +236,7 @@ public class FirstPersonRenderer {
         int halfH = Math.max(3, Math.min(height / 3, (int)(height / transformY / 8)));
         int halfW = Math.max(4, (int)(halfH * 1.25));
 
-        double mapWorldH = 0.52;
+        double mapWorldH = Config.FPI.mapWorldHeight;
         int centerY = (int)(height / 2.0 + (0.5 - mapWorldH) * height / transformY);
 
         int startX = Math.max(0,         screenX - halfW);
@@ -307,8 +307,7 @@ public class FirstPersonRenderer {
         int halfH = Math.max(2, (int)(height / transformY / 10));
         int halfW = halfH;
 
-//        double coinWorldH = 0.62;
-        double coinWorldH = 0.5;
+        double coinWorldH = Config.FPI.coinWorldHeight;
         int centerY = (int)(height / 2.0 + (0.5 - coinWorldH) * height / transformY);
 
         int startX = Math.max(0,         screenX - halfW);
@@ -353,7 +352,7 @@ public class FirstPersonRenderer {
         int halfH = Math.max(3, (int)(height / transformY / 8));
         int halfW = Math.max(2, (int)(halfH * 1.1));
 
-        double keyWorldH = 0.5;
+        double keyWorldH = Config.FPI.keyWorldHeight;
         int centerY = (int)(height / 2.0 + (0.5 - keyWorldH) * height / transformY);
 
         int startX = Math.max(0,         screenX - halfW);
@@ -480,8 +479,8 @@ public class FirstPersonRenderer {
         int halfW = (int)(halfH * 4.5);  // strongly foreshortened
 
         // Push centre below the floor line so it reads as a ground-level hole
-        // at all distances (coefficient 0.72 > 0.5 so it sits below the horizon)
-        int centerY = (int)(height / 2.0 + 0.72 * height / transformY);
+        // at all distances (configurable height offset > 0.5 so it sits below the horizon)
+        int centerY = (int)(height / 2.0 + Config.FPI.holeWorldHeightOffset * height / transformY);
 
         int startX = Math.max(0,         screenX - halfW);
         int endX   = Math.min(width - 1, screenX + halfW);

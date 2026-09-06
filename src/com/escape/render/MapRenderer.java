@@ -92,7 +92,7 @@ public class MapRenderer {
         g.setStroke(saved);
 
         // ── Floor label (below HUD) ───────────────────────────────────
-        g.setFont(new Font("SansSerif", Font.BOLD, 16));
+        g.setFont(Config.MAP.labelFont);
         g.setColor(Color.WHITE);
 //        g.drawString("Floor " + (player.floor + 1) + " of 3", 10, 24);
         g.drawString(Config.MAP.labelFloor + (player.floor + 1), 10, 56);
