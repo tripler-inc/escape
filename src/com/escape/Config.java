@@ -131,6 +131,8 @@ public final class Config {
     public static final class FirstPersonRendererSection {
         public final Color ceiling;
         public final Color floor;
+        public final Color wallNs;
+        public final Color wallEw;
         public final Color coinGold;
         public final Color coinHighlight;
         public final Color keyGold;
@@ -142,13 +144,13 @@ public final class Config {
         public final Color mapPaper;
         public final Color mapFold;
         public final Color mapInk;
-        public final int baseNs;
-        public final int baseEw;
         public final double cameraPlaneScale;
 
         private FirstPersonRendererSection() {
             ceiling           = getColor("FirstPersonRenderer", "COL_CEILING");
             floor             = getColor("FirstPersonRenderer", "COL_FLOOR");
+            wallNs            = getColor("FirstPersonRenderer", "COL_WALL_NS");
+            wallEw            = getColor("FirstPersonRenderer", "COL_WALL_EW");
             coinGold          = getColor("FirstPersonRenderer", "COL_COIN_GOLD");
             coinHighlight     = getColor("FirstPersonRenderer", "COL_COIN_HLIGHT");
             keyGold           = getColor("FirstPersonRenderer", "COL_KEY_GOLD");
@@ -160,8 +162,6 @@ public final class Config {
             mapPaper          = getColor("FirstPersonRenderer", "COL_MAP_PAPER");
             mapFold           = getColor("FirstPersonRenderer", "COL_MAP_FOLD");
             mapInk            = getColor("FirstPersonRenderer", "COL_MAP_INK");
-            baseNs            = getInt("FirstPersonRenderer", "BASE_NS");
-            baseEw            = getInt("FirstPersonRenderer", "BASE_EW");
             cameraPlaneScale  = getDouble("FirstPersonRenderer", "CAMERA_PLANE_SCALE");
         }
     }

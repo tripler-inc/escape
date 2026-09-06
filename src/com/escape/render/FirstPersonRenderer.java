@@ -28,6 +28,8 @@ public class FirstPersonRenderer {
 
     private static final Color CEILING_COLOR  = Config.FP.ceiling;
     private static final Color FLOOR_COLOR    = Config.FP.floor;
+    private static final Color WALL_NS_COLOR  = Config.FP.wallNs;
+    private static final Color WALL_EW_COLOR  = Config.FP.wallEw;
     private static final Color COIN_GOLD      = Config.FP.coinGold;
     private static final Color COIN_HIGHLIGHT = Config.FP.coinHighlight;
     private static final Color KEY_GOLD       = Config.FP.keyGold;
@@ -39,10 +41,6 @@ public class FirstPersonRenderer {
     private static final Color MAP_PAPER      = Config.FP.mapPaper;
     private static final Color MAP_FOLD       = Config.FP.mapFold;
     private static final Color MAP_INK        = Config.FP.mapInk;
-
-    // Base wall brightness for each hit-side
-    private static final int BASE_NS = Config.FP.baseNs;
-    private static final int BASE_EW = Config.FP.baseEw;
 
     /** Per-column wall distance, populated during the DDA pass. */
     private double[] zBuffer = new double[0];
@@ -154,9 +152,7 @@ public class FirstPersonRenderer {
                 wallColor = new Color(r, grn, 0);
             } else {
                 double shade = Math.max(0.2, 1.0 / (1.0 + perpDist * 0.2));
-                int base = (side == 0) ? BASE_NS : BASE_EW;
-                int c    = (int)(base * shade);
-                wallColor = new Color(c, c, c);
+                wallColor = shadedColor((side == 0) ? WALL_NS_COLOR : WALL_EW_COLOR, shade);
             }
 
             g.setColor(wallColor);
@@ -165,6 +161,13 @@ public class FirstPersonRenderer {
 
         // ── Item sprites (coins, map, key, ladders, holes) over walls via z-buffer ──
         renderSprites(g, width, height, world, px, py, dirX, dirY, planeX, planeY);
+    }
+
+    private static Color shadedColor(Color baseColor, double shade) {
+        int r = (int) Math.max(0, Math.min(255, baseColor.getRed() * shade));
+        int g = (int) Math.max(0, Math.min(255, baseColor.getGreen() * shade));
+        int b = (int) Math.max(0, Math.min(255, baseColor.getBlue() * shade));
+        return new Color(r, g, b);
     }
 
     // ─────────────────────────────────────────────────────────────────
