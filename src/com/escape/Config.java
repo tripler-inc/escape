@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -26,6 +27,7 @@ public final class Config {
     private static final Map<String, Map<String, String>> DATA = loadIni();
 
     public static final WorldSection WORLD = new WorldSection();
+    public static final MazeGenerationSection MAZE_GENERATION = new MazeGenerationSection();
     public static final GamePanelSection GAME_PANEL = new GamePanelSection();
     public static final MapRendererSection MAP = new MapRendererSection();
     public static final FirstPersonRendererSection FP = new FirstPersonRendererSection();
@@ -37,6 +39,26 @@ public final class Config {
     public static final ConfettiSection CONFETTI = new ConfettiSection();
 
     private Config() {}
+
+    public static Map<String, Map<String, String>> loadCurrentData() {
+        return deepCopy(loadIni());
+    }
+
+    public static Map<String, Map<String, String>> snapshotData() {
+        return deepCopy(DATA);
+    }
+
+    public static Path externalConfigPath() {
+        return resolveExternalConfigPath();
+    }
+
+    private static Map<String, Map<String, String>> deepCopy(Map<String, Map<String, String>> source) {
+        Map<String, Map<String, String>> copy = new LinkedHashMap<>();
+        for (Map.Entry<String, Map<String, String>> sectionEntry : source.entrySet()) {
+            copy.put(sectionEntry.getKey(), new LinkedHashMap<>(sectionEntry.getValue()));
+        }
+        return copy;
+    }
 
     public static final class WorldSection {
         public final int numFloors;
@@ -61,6 +83,38 @@ public final class Config {
             scoreKey           = getInt("World", "SCORE_KEY");
             scoreMap           = getInt("World", "SCORE_MAP");
             bonusSecondsPerFloor = getInt("World", "BONUS_SECONDS_PER_FLOOR");
+        }
+    }
+
+    public enum MazeAlgorithm {
+        DFS,
+        PRIM,
+        RANDOM,
+        WILSON;
+
+        private static MazeAlgorithm fromConfig(String raw) {
+            String normalized = raw.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
+            return switch (normalized) {
+                case "DFS", "DEPTH_FIRST_SEARCH", "RECURSIVE_BACKTRACKER" -> DFS;
+                case "PRIM", "PRIMS" -> PRIM;
+                case "RANDOM" -> RANDOM;
+                case "WILSON", "WILSONS" -> WILSON;
+                default -> throw new IllegalStateException(
+                        "Invalid [MazeGeneration] ALGORITHM [" + raw + "]; expected DFS, PRIM, RANDOM, or WILSON");
+            };
+        }
+    }
+
+    public static final class MazeGenerationSection {
+        public final MazeAlgorithm algorithm;
+        public final int extraOpenings;
+
+        private MazeGenerationSection() {
+            algorithm = MazeAlgorithm.fromConfig(getString("MazeGeneration", "ALGORITHM"));
+            extraOpenings = getInt("MazeGeneration", "EXTRA_OPENINGS");
+            if (extraOpenings < 0) {
+                throw new IllegalStateException("[MazeGeneration] EXTRA_OPENINGS must be >= 0");
+            }
         }
     }
 

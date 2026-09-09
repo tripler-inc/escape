@@ -51,17 +51,33 @@ public class HelpOverlay {
     private static final int OUTER_MARGIN = Config.HELP.outerMargin;
     private static final int PANEL_PADDING_X = Config.HELP.panelPaddingX;
     private static final int PANEL_PADDING_Y = Config.HELP.panelPaddingY;
+    private static final int SCROLL_PAGE_LINES = 6;
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\b[A-Z][A-Z0-9_]*\\b");
     private static final Map<String, String> PLACEHOLDER_VALUES = buildPlaceholderValues();
 
     private List<String> lines;
+    private int scrollOffset;
 
     public HelpOverlay() {
         lines = loadLines();
+        scrollOffset = 0;
     }
 
     public void reload() {
         lines = loadLines();
+        scrollOffset = 0;
+    }
+
+    public void scrollBy(int deltaLines) {
+        scrollOffset = Math.max(0, scrollOffset + deltaLines);
+    }
+
+    public void scrollToTop() {
+        scrollOffset = 0;
+    }
+
+    public void scrollToBottom() {
+        scrollOffset = Integer.MAX_VALUE;
     }
 
     public void draw(Graphics2D g, int width, int height) {
@@ -71,6 +87,7 @@ public class HelpOverlay {
         g.setFont(TEXT_FONT);
         FontMetrics fm = g.getFontMetrics();
         int lineH = fm.getHeight();
+        int footerH = lineH;
 
         int maxTextWidth = 0;
         for (String line : lines) {
@@ -79,11 +96,20 @@ public class HelpOverlay {
 
         int panelW = Math.min(width - OUTER_MARGIN * 2, maxTextWidth + PANEL_PADDING_X * 2);
         int maxLines = Math.max(1, (height - OUTER_MARGIN * 2 - PANEL_PADDING_Y * 2) / lineH);
-        int visibleLines = Math.min(maxLines, Math.max(1, lines.size()));
-        int panelH = visibleLines * lineH + PANEL_PADDING_Y * 2;
+        boolean scrollable = lines.size() > maxLines;
+        int visibleLines = Math.min(lines.size(), scrollable ? Math.max(1, maxLines - 1) : maxLines);
+        int maxScroll = Math.max(0, lines.size() - visibleLines);
+        if (scrollOffset > maxScroll) {
+            scrollOffset = maxScroll;
+        }
+        int firstLine = Math.min(scrollOffset, maxScroll);
+        int panelH = visibleLines * lineH + PANEL_PADDING_Y * 2 + (scrollable ? footerH : 0);
 
         int panelX = (width - panelW) / 2;
         int panelY = (height - panelH) / 2;
+        int textX = panelX + PANEL_PADDING_X;
+        int textY = panelY + PANEL_PADDING_Y + fm.getAscent();
+        int textAreaBottom = panelY + panelH - PANEL_PADDING_Y - (scrollable ? footerH : 0);
 
         g.setColor(PANEL_BG);
         g.fillRoundRect(panelX, panelY, panelW, panelH, 16, 16);
@@ -91,11 +117,37 @@ public class HelpOverlay {
         g.drawRoundRect(panelX, panelY, panelW, panelH, 16, 16);
 
         g.setColor(TEXT_COLOR);
-        int textX = panelX + PANEL_PADDING_X;
-        int textY = panelY + PANEL_PADDING_Y + fm.getAscent();
         for (int i = 0; i < visibleLines; i++) {
-            g.drawString(lines.get(i), textX, textY);
+            int lineIndex = firstLine + i;
+            if (lineIndex >= lines.size()) {
+                break;
+            }
+            g.drawString(lines.get(lineIndex), textX, textY);
             textY += lineH;
+            if (textY + fm.getDescent() > textAreaBottom) {
+                break;
+            }
+        }
+
+        if (scrollable) {
+            g.setFont(TEXT_FONT.deriveFont(Font.ITALIC, Math.max(10f, TEXT_FONT.getSize2D() - 2f)));
+            FontMetrics footerFm = g.getFontMetrics();
+            String footer = "Scroll: mouse wheel, PgUp/PgDn, arrows   "
+                    + (firstLine + 1) + "-" + Math.min(lines.size(), firstLine + visibleLines)
+                    + " / " + lines.size();
+            int footerY = panelY + panelH - PANEL_PADDING_Y - footerFm.getDescent();
+            g.drawString(footer, textX, footerY);
+
+            int trackX = panelX + panelW - PANEL_PADDING_X + 4;
+            int trackY = panelY + PANEL_PADDING_Y;
+            int trackH = panelH - PANEL_PADDING_Y * 2 - footerH;
+            int thumbH = Math.max(16, (int) Math.round(trackH * (visibleLines / (double) lines.size())));
+            int thumbY = trackY + (int) Math.round((trackH - thumbH) * (firstLine / (double) Math.max(1, maxScroll)));
+
+            g.setColor(withAlpha(PANEL_BORDER, 110));
+            g.fillRoundRect(trackX, trackY, 4, trackH, 4, 4);
+            g.setColor(withAlpha(TEXT_COLOR, 180));
+            g.fillRoundRect(trackX, thumbY, 4, thumbH, 4, 4);
         }
     }
 

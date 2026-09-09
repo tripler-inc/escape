@@ -79,7 +79,7 @@ public class World {
         for (int i = 0; i < NUM_FLOORS - 1; i++) {
             Set<Point> exclude = new HashSet<>();
             exclude.add(new Point(startCol, ROWS)); // avoid start cell
-            ladders[i] = pickEmptyRoomCell(rng, floors[i], exclude);
+            ladders[i] = pickConnectedLadderCell(rng, floors[i], floors[i + 1], exclude);
             floors[i].placeItem(ladders[i].y, ladders[i].x, ItemType.LADDER_UP);
             floors[i+1].placeItem(ladders[i].y, ladders[i].x, ItemType.HOLE_DOWN);
         }
@@ -149,6 +149,28 @@ public class World {
             return p;
         }
         return pickRoomCell(rng, floor.getMaze(), excluded);
+    }
+
+    private Point pickConnectedLadderCell(Random rng, Floor floor, Floor nextFloor, Set<Point> excluded) {
+        List<Point> cells = shuffledRoomCells(rng, floor.getMaze());
+        for (Point p : cells) {
+            if (excluded.contains(p)) continue;
+            if (floor.hasItem(p.y, p.x)) continue;
+            if (nextFloor.hasItem(p.y, p.x)) continue;
+            if (!nextFloor.getMaze().isPassage(p.y, p.x)) continue;
+            return p;
+        }
+
+        for (Point p : cells) {
+            if (excluded.contains(p)) continue;
+            if (floor.hasItem(p.y, p.x)) continue;
+            if (nextFloor.hasItem(p.y, p.x)) continue;
+            if (floor.getMaze().isPassage(p.y, p.x) && nextFloor.getMaze().isPassage(p.y, p.x)) {
+                return p;
+            }
+        }
+
+        return pickEmptyRoomCell(rng, floor, excluded);
     }
 
     private List<Point> shuffledRoomCells(Random rng, Maze maze) {

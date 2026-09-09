@@ -7,12 +7,14 @@ import com.escape.render.HUDRenderer;
 import com.escape.render.MapRenderer;
 import com.escape.render.RenderMode;
 import com.escape.ui.ConfettiAnimation;
+import com.escape.ui.ConfigDialog;
 import com.escape.ui.ExitConfirmDialog;
 import com.escape.ui.HelpOverlay;
 import com.escape.world.World;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
+import javax.swing.SwingUtilities;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -21,6 +23,7 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.Window;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -98,6 +101,13 @@ public class GamePanel extends JPanel {
                 if (!heldKeys.contains(KeyEvent.VK_UP) && !heldKeys.contains(KeyEvent.VK_DOWN)) {
                     moveSpeed = MOVE_SPEED;
                 }
+            }
+        });
+
+        addMouseWheelListener(e -> {
+            if (helpVisible) {
+                helpOverlay.scrollBy(e.getWheelRotation() * 3);
+                repaint();
             }
         });
 
@@ -267,6 +277,36 @@ public class GamePanel extends JPanel {
             return;
         }
 
+        if (helpVisible && key == KeyEvent.VK_C) {
+            openConfigScreen();
+            return;
+        }
+
+        if (helpVisible) {
+            switch (key) {
+                case KeyEvent.VK_UP:
+                case KeyEvent.VK_LEFT:
+                case KeyEvent.VK_PAGE_UP:
+                    helpOverlay.scrollBy(key == KeyEvent.VK_PAGE_UP ? -6 : -1);
+                    repaint();
+                    return;
+                case KeyEvent.VK_DOWN:
+                case KeyEvent.VK_RIGHT:
+                case KeyEvent.VK_PAGE_DOWN:
+                    helpOverlay.scrollBy(key == KeyEvent.VK_PAGE_DOWN ? 6 : 1);
+                    repaint();
+                    return;
+                case KeyEvent.VK_HOME:
+                    helpOverlay.scrollToTop();
+                    repaint();
+                    return;
+                case KeyEvent.VK_END:
+                    helpOverlay.scrollToBottom();
+                    repaint();
+                    return;
+            }
+        }
+
         // Q: quit confirmation – works in any game state
         if (key == KeyEvent.VK_Q) {
             resetInputState();
@@ -293,6 +333,12 @@ public class GamePanel extends JPanel {
                 }
                 break;
         }
+    }
+
+    private void openConfigScreen() {
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        ConfigDialog.showDialog(owner);
+        requestFocusInWindow();
     }
 
     // ── Painting ──────────────────────────────────────────────────────
