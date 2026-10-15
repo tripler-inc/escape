@@ -11,6 +11,7 @@ public final class MazeGenerator {
     private static final MazeGenerationAlgorithm[] ALGORITHMS = {
             new DepthFirstSearchMazeGenerator(),
             new RandomizedPrimMazeGenerator(),
+            new OpenMazeGenerator(),
             new WilsonMazeGenerator()
     };
 
@@ -26,7 +27,8 @@ public final class MazeGenerator {
         return switch (Config.MAZE_GENERATION.algorithm) {
             case DFS -> ALGORITHMS[0];
             case PRIM -> ALGORITHMS[1];
-            case WILSON -> ALGORITHMS[2];
+            case OPEN -> ALGORITHMS[2];
+            case WILSON -> ALGORITHMS[3];
             case RANDOM -> ALGORITHMS[rng.nextInt(ALGORITHMS.length)];
         };
     }
@@ -36,6 +38,7 @@ public final class MazeGenerator {
             case DFS -> new DepthFirstSearchMazeGenerator();
             case PRIM -> new RandomizedPrimMazeGenerator();
             case RANDOM -> throw new IllegalStateException("RANDOM is handled per-floor by selectAlgorithm");
+            case OPEN -> new OpenMazeGenerator();
             case WILSON -> new WilsonMazeGenerator();
         };
     }

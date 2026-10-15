@@ -90,6 +90,7 @@ public final class Config {
         DFS,
         PRIM,
         RANDOM,
+        OPEN,
         WILSON;
 
         private static MazeAlgorithm fromConfig(String raw) {
@@ -98,9 +99,10 @@ public final class Config {
                 case "DFS", "DEPTH_FIRST_SEARCH", "RECURSIVE_BACKTRACKER" -> DFS;
                 case "PRIM", "PRIMS" -> PRIM;
                 case "RANDOM" -> RANDOM;
+                case "OPEN" -> OPEN;
                 case "WILSON", "WILSONS" -> WILSON;
                 default -> throw new IllegalStateException(
-                        "Invalid [MazeGeneration] ALGORITHM [" + raw + "]; expected DFS, PRIM, RANDOM, or WILSON");
+                    "Invalid [MazeGeneration] ALGORITHM [" + raw + "]; expected DFS, PRIM, RANDOM, OPEN, or WILSON");
             };
         }
     }
@@ -108,12 +110,17 @@ public final class Config {
     public static final class MazeGenerationSection {
         public final MazeAlgorithm algorithm;
         public final int extraOpenings;
+        public final int openWallPercent;
 
         private MazeGenerationSection() {
             algorithm = MazeAlgorithm.fromConfig(getString("MazeGeneration", "ALGORITHM"));
             extraOpenings = getInt("MazeGeneration", "EXTRA_OPENINGS");
+            openWallPercent = getIntOrDefault("MazeGeneration", "OPEN_WALL_PERCENT", 20);
             if (extraOpenings < 0) {
                 throw new IllegalStateException("[MazeGeneration] EXTRA_OPENINGS must be >= 0");
+            }
+            if (openWallPercent < 0 || openWallPercent > 100) {
+                throw new IllegalStateException("[MazeGeneration] OPEN_WALL_PERCENT must be between 0 and 100");
             }
         }
     }
@@ -473,6 +480,22 @@ public final class Config {
     private static int getInt(String section, String key) {
         try {
             return Integer.parseInt(getString(section, key));
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("Invalid int [" + section + "] " + key, e);
+        }
+    }
+
+    private static int getIntOrDefault(String section, String key, int defaultValue) {
+        Map<String, String> values = DATA.get(section);
+        if (values == null) {
+            return defaultValue;
+        }
+        String raw = values.get(key);
+        if (raw == null || raw.trim().isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(raw.trim());
         } catch (NumberFormatException e) {
             throw new IllegalStateException("Invalid int [" + section + "] " + key, e);
         }

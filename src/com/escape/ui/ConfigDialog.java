@@ -115,7 +115,7 @@ public final class ConfigDialog extends JDialog {
             JLabel label = new JLabel(valueEntry.getKey());
             Object editor;
             if (isMazeAlgorithmField(sectionName, valueEntry.getKey())) {
-                JComboBox<String> combo = new JComboBox<>(new String[] {"DFS", "PRIM", "RANDOM", "WILSON"});
+                JComboBox<String> combo = new JComboBox<>(new String[] {"DFS", "PRIM", "RANDOM", "OPEN", "WILSON"});
                 combo.setEditable(false);
                 combo.setSelectedItem(normalizeAlgorithmValue(valueEntry.getValue()));
                 combo.setToolTipText(valueEntry.getValue());
@@ -287,6 +287,7 @@ public final class ConfigDialog extends JDialog {
             case "DFS":
             case "PRIM":
             case "RANDOM":
+            case "OPEN":
             case "WILSON":
                 return normalized;
             default:

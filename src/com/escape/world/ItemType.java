@@ -7,5 +7,7 @@ public enum ItemType {
     KEY,
     LADDER_UP,
     HOLE_DOWN,
-    EXIT
+    EXIT,
+    COMPASS,
+    PAD
 }
