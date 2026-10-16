@@ -37,6 +37,11 @@ public class HUDRenderer {
         drawCompassRose(g, width - 76, 18, world.getPlayer());
     }
 
+    public void renderPadStatus(Graphics2D g, int width, int height, World world) {
+        if (!world.getPlayer().hasPad) return;
+        drawPadStatus(g, width - 116, 62);
+    }
+
     public void renderContextHint(Graphics2D g, int width, int height, World world) {
         Player player = world.getPlayer();
         ItemType cell = world.getCurrentFloor()
@@ -101,11 +106,25 @@ public class HUDRenderer {
         g.drawLine(cx + radius, cy, cx + radius - 5, cy);
 
         g.setColor(Config.HUD.compassNeedle);
-        int needleX = (int) Math.round(Math.cos(player.angle) * (radius - 6));
-        int needleY = (int) Math.round(Math.sin(player.angle) * (radius - 6));
+        double heading = -player.angle;
+        int needleX = (int) Math.round(Math.cos(heading) * (radius - 6));
+        int needleY = (int) Math.round(Math.sin(heading) * (radius - 6));
         g.drawLine(cx, cy, cx + needleX, cy + needleY);
         g.fillOval(cx + needleX - 3, cy + needleY - 3, 6, 6);
         g.fillOval(cx - 3, cy - 3, 6, 6);
+    }
+
+    private void drawPadStatus(Graphics2D g, int x, int y) {
+        int w = 42;
+        int h = 26;
+        g.setColor(Config.HUD.padColor);
+        g.fillRoundRect(x, y, w, h, 8, 8);
+        g.setColor(Config.HUD.padBorder);
+        g.drawRoundRect(x, y, w, h, 8, 8);
+        g.setColor(Config.HUD.padScreen);
+        g.fillRoundRect(x + 6, y + 5, w - 12, h - 10, 5, 5);
+        g.setColor(Config.HUD.padHighlight);
+        g.fillRoundRect(x + 10, y + 8, w - 20, 4, 2, 2);
     }
 
     // ── Key icon (top-right) ─────────────────────────────────────────

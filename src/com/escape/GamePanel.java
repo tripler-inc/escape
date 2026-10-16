@@ -366,6 +366,9 @@ public class GamePanel extends JPanel {
                 if (world.getPlayer().hasCompass) {
                     hudRenderer.renderCompassRose(g2, w, h, world);
                 }
+                if (world.getPlayer().hasPad) {
+                    hudRenderer.renderPadStatus(g2, w, h, world);
+                }
                 if (mapHintRemainingMs > 0) {
                     hudRenderer.renderMapHint(g2, w);
                 }

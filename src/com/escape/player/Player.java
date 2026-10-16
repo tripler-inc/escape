@@ -7,6 +7,7 @@ public class Player {
     public int   floor;
     public boolean hasKey;
     public boolean hasCompass;
+    public boolean hasPad;
     public int   coins;
     public float angle;   // radians; 0 = east, -PI/2 = north
     private final boolean[] discoveredMaps;
@@ -17,6 +18,7 @@ public class Player {
         this.floor = floor;
         this.hasKey = false;
         this.hasCompass = false;
+        this.hasPad = false;
         this.coins  = 0;
         this.angle  = -(float) (Math.PI / 2.0); // face north at start
         this.discoveredMaps = new boolean[Math.max(1, numFloors)];

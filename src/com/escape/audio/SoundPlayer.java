@@ -27,6 +27,9 @@ public class SoundPlayer {
     private static final byte[] COMPASS_PICKUP_PCM = buildPatternPcm(
             COMPASS_PICKUP_FREQS, Config.SOUND.keyPickupDurationMs,
             Config.SOUND.keyPickupGapMs, Config.SOUND.keyPickupVolume * 0.6);
+    private static final double[] PAD_PICKUP_FREQS = new double[] { 740.0, 880.0, 1046.5 };
+    private static final byte[] PAD_PICKUP_PCM = buildPatternPcm(
+            PAD_PICKUP_FREQS, 28, 4, 0.18);
     private static final byte[] MAP_SHUFFLE_PCM = buildPaperShufflePcm(
             Config.SOUND.mapShuffleDurationMs,
             Config.SOUND.mapShuffleVolume,
@@ -80,6 +83,10 @@ public class SoundPlayer {
 
     public void playCompassPickup() {
         playSfxAsync(COMPASS_PICKUP_PCM);
+    }
+
+    public void playPadPickup() {
+        playSfxAsync(PAD_PICKUP_PCM);
     }
 
     public void playCoinClink() {

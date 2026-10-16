@@ -163,6 +163,8 @@ public final class Config {
         public final Color ladderDown;
         public final Color markerOutline;
         public final Color exitSeen;
+        public final Color coinRemaining;
+        public final Color coinRemainingOutline;
         public final String labelFloor;
         public final String labelTime;
         public final String labelScore;
@@ -180,6 +182,8 @@ public final class Config {
             ladderDown      = getColor("MapRenderer", "COL_LADDER_DOWN");
             markerOutline   = getColor("MapRenderer", "COL_MARKER_OUTLINE");
             exitSeen        = getColor("MapRenderer", "COL_EXIT_SEEN");
+            coinRemaining   = getColor("MapRenderer", "COL_COIN_REMAINING");
+            coinRemainingOutline = getColor("MapRenderer", "COL_COIN_REMAINING_OUTLINE");
             labelFloor      = getString("MapRenderer", "LABEL_FLOOR");
             labelTime       = getString("MapRenderer", "LABEL_TIME");
             labelScore      = getString("MapRenderer", "LABEL_SCORE");
@@ -207,6 +211,9 @@ public final class Config {
         public final Color mapInk;
         public final Color compassRing;
         public final Color compassNeedle;
+        public final Color padBody;
+        public final Color padScreen;
+        public final Color padBezel;
         public final double cameraPlaneScale;
 
         private FirstPersonRendererSection() {
@@ -227,6 +234,9 @@ public final class Config {
             mapInk            = getColor("FirstPersonRenderer", "COL_MAP_INK");
             compassRing       = getColor("FirstPersonRenderer", "COL_COMPASS_RING");
             compassNeedle     = getColor("FirstPersonRenderer", "COL_COMPASS_NEEDLE");
+            padBody           = getColor("FirstPersonRenderer", "COL_PAD_BODY");
+            padScreen         = getColor("FirstPersonRenderer", "COL_PAD_SCREEN");
+            padBezel          = getColor("FirstPersonRenderer", "COL_PAD_BEZEL");
             cameraPlaneScale  = getDouble("FirstPersonRenderer", "CAMERA_PLANE_SCALE");
         }
     }
@@ -235,12 +245,16 @@ public final class Config {
         public final double coinWorldHeight;
         public final double keyWorldHeight;
         public final double mapWorldHeight;
+        public final double compassWorldHeight;
+        public final double padWorldHeight;
         public final double holeWorldHeightOffset;
 
         private FirstPersonItemsSection() {
             coinWorldHeight      = getDouble("FirstPersonItems", "COIN_WORLD_HEIGHT");
             keyWorldHeight       = getDouble("FirstPersonItems", "KEY_WORLD_HEIGHT");
             mapWorldHeight       = getDouble("FirstPersonItems", "MAP_WORLD_HEIGHT");
+            compassWorldHeight   = getDouble("FirstPersonItems", "COMPASS_WORLD_HEIGHT");
+            padWorldHeight       = getDouble("FirstPersonItems", "PAD_WORLD_HEIGHT");
             holeWorldHeightOffset = getDouble("FirstPersonItems", "HOLE_WORLD_HEIGHT_OFFSET");
         }
     }
@@ -255,6 +269,10 @@ public final class Config {
         public final Color keyHole;
         public final Color keyShaft;
         public final Color keyShaftBorder;
+        public final Color padColor;
+        public final Color padBorder;
+        public final Color padScreen;
+        public final Color padHighlight;
         public final Color compassBg;
         public final Color compassRing;
         public final Color compassNeedle;
@@ -282,6 +300,10 @@ public final class Config {
             keyHole         = getColor("HUDRenderer", "COL_KEY_HOLE");
             keyShaft        = getColor("HUDRenderer", "COL_KEY_SHAFT");
             keyShaftBorder  = getColor("HUDRenderer", "COL_KEY_SHAFT_BRDR");
+            padColor        = getColor("HUDRenderer", "COL_PAD_BODY");
+            padBorder       = getColor("HUDRenderer", "COL_PAD_BORDER");
+            padScreen       = getColor("HUDRenderer", "COL_PAD_SCREEN");
+            padHighlight    = getColor("HUDRenderer", "COL_PAD_HIGHLIGHT");
             compassBg       = getColor("HUDRenderer", "COL_COMPASS_BG");
             compassRing     = getColor("HUDRenderer", "COL_COMPASS_RING");
             compassNeedle   = getColor("HUDRenderer", "COL_COMPASS_NEEDLE");

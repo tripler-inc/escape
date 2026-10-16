@@ -70,6 +70,9 @@ public class MapRenderer {
         // ── Ladder markers ───────────────────────────────────────────
         drawLadderMarkers(g, world, floor, cellSize, offsetX, offsetY);
         drawExitMarker(g, world, floor, cellSize, offsetX, offsetY);
+        if (player.hasPad) {
+            drawRemainingCoinMarkers(g, world, floor, cellSize, offsetX, offsetY);
+        }
 
         int dotDiam = Math.max(4, cellSize * 2 / 3);
         g.setColor(COL_PLAYER);
@@ -168,5 +171,20 @@ public class MapRenderer {
         g.fillRect(cellX + inset, cellY + inset, size, size);
         g.setColor(COL_MARKER_OUTLINE);
         g.drawRect(cellX + inset, cellY + inset, size, size);
+    }
+
+    private void drawRemainingCoinMarkers(Graphics2D g, World world, Floor floor,
+                                          int cellSize, int offsetX, int offsetY) {
+        int markerDiam = Math.max(3, cellSize / 3);
+        for (Map.Entry<Point, ItemType> entry : floor.getItems().entrySet()) {
+            if (entry.getValue() != ItemType.COIN) continue;
+            Point p = entry.getKey();
+            int cx = offsetX + p.x * cellSize + cellSize / 2;
+            int cy = offsetY + p.y * cellSize + cellSize / 2;
+            g.setColor(Config.MAP.coinRemaining);
+            g.fillOval(cx - markerDiam / 2, cy - markerDiam / 2, markerDiam, markerDiam);
+            g.setColor(Config.MAP.coinRemainingOutline);
+            g.drawOval(cx - markerDiam / 2, cy - markerDiam / 2, markerDiam, markerDiam);
+        }
     }
 }

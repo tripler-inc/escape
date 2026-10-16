@@ -34,6 +34,9 @@ public class FirstPersonRenderer {
     private static final Color COIN_HIGHLIGHT = Config.FP.coinHighlight;
     private static final Color KEY_GOLD       = Config.FP.keyGold;
     private static final Color KEY_HIGHLIGHT  = Config.FP.keyHighlight;
+    private static final Color PAD_BODY       = Config.FP.padBody;
+    private static final Color PAD_SCREEN     = Config.FP.padScreen;
+    private static final Color PAD_BEZEL      = Config.FP.padBezel;
     private static final Color LADDER_RAIL    = Config.FP.ladderRail;
     private static final Color LADDER_RUNG    = Config.FP.ladderRung;
     private static final Color HOLE_DARK      = Config.FP.holeDark;
@@ -191,6 +194,7 @@ public class FirstPersonRenderer {
                 && type != ItemType.MAP
                     && type != ItemType.KEY
                     && type != ItemType.COMPASS
+                    && type != ItemType.PAD
                     && type != ItemType.LADDER_UP
                     && type != ItemType.HOLE_DOWN) continue;
             Point  p  = entry.getKey();   // x = col, y = row
@@ -223,6 +227,7 @@ public class FirstPersonRenderer {
                 case MAP:       drawMapSprite      (g, width, height, screenX, transformY); break;
                 case KEY:       drawKeySprite      (g, width, height, screenX, transformY); break;
                 case COMPASS:   drawCompassSprite  (g, width, height, screenX, transformY); break;
+                case PAD:       drawPadSprite      (g, width, height, screenX, transformY); break;
                 case LADDER_UP:
                     if (drawLadderSprite(g, width, height, screenX, transformY)) {
                         world.markCurrentFloorUpLadderSeen();
@@ -416,7 +421,8 @@ public class FirstPersonRenderer {
     private void drawCompassSprite(Graphics2D g, int width, int height,
                                   int screenX, double transformY) {
         int size = Math.max(4, (int) (height / transformY / 28));
-        int centerY = (int) (height / 2.0 + 0.58 * height / transformY);
+        double compassWorldH = Config.FPI.compassWorldHeight;
+        int centerY = (int) (height / 2.0 + (0.5 - compassWorldH) * height / transformY);
         int x = screenX;
         int y = centerY;
         int zIndex = Math.max(0, Math.min(width - 1, x));
@@ -433,6 +439,46 @@ public class FirstPersonRenderer {
         g.drawLine(x, y, x, y - size);
         g.drawLine(x, y, x + size / 2, y + size / 3);
         g.drawLine(x, y, x - size / 4, y + size / 3);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // Pad: simple iPad-like silhouette, rendered as a thin bezel and screen.
+    // ─────────────────────────────────────────────────────────────────
+
+    private void drawPadSprite(Graphics2D g, int width, int height,
+                              int screenX, double transformY) {
+        int halfH = Math.max(4, (int) (height / transformY / 15));
+        int halfW = Math.max(5, halfH * 5 / 6);
+        double padWorldH = Config.FPI.padWorldHeight;
+        int centerY = (int) (height / 2.0 + (0.5 - padWorldH) * height / transformY);
+
+        int startX = Math.max(0, screenX - halfW);
+        int endX = Math.min(width - 1, screenX + halfW);
+        int startY = Math.max(0, centerY - halfH);
+        int endY = Math.min(height - 1, centerY + halfH);
+        int zIndex = Math.max(0, Math.min(width - 1, screenX));
+        if (transformY >= zBuffer[zIndex]) return;
+
+        for (int stripe = startX; stripe <= endX; stripe++) {
+            if (transformY >= zBuffer[stripe]) continue;
+            int leftInset = (int) (Math.abs(stripe - screenX) / (double) halfW * halfH);
+            int top = centerY - halfH + leftInset / 3;
+            int bottom = centerY + halfH - leftInset / 3;
+            if (top >= bottom) continue;
+
+            g.setColor(PAD_BEZEL);
+            g.drawLine(stripe, top, stripe, bottom);
+
+            int screenTop = top + Math.max(1, halfH / 8);
+            int screenBottom = bottom - Math.max(1, halfH / 8);
+            if (screenTop < screenBottom) {
+                g.setColor(PAD_SCREEN);
+                g.drawLine(stripe, screenTop, stripe, screenBottom);
+            }
+        }
+
+        g.setColor(PAD_BODY);
+        g.drawRoundRect(screenX - halfW, centerY - halfH, halfW * 2, halfH * 2, 10, 10);
     }
 
     // ─────────────────────────────────────────────────────────────────
