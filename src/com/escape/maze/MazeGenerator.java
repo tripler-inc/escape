@@ -33,16 +33,6 @@ public final class MazeGenerator {
         };
     }
 
-    private static MazeGenerationAlgorithm createAlgorithm(Config.MazeAlgorithm algorithm) {
-        return switch (algorithm) {
-            case DFS -> new DepthFirstSearchMazeGenerator();
-            case PRIM -> new RandomizedPrimMazeGenerator();
-            case RANDOM -> throw new IllegalStateException("RANDOM is handled per-floor by selectAlgorithm");
-            case OPEN -> new OpenMazeGenerator();
-            case WILSON -> new WilsonMazeGenerator();
-        };
-    }
-
     /** Chebyshev distance: openings must not sit in the same neighborhood. */
     private static final int MIN_LOOP_SEPARATION = 6;
 

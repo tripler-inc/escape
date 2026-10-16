@@ -287,13 +287,13 @@ public class GamePanel extends JPanel {
                 case KeyEvent.VK_UP:
                 case KeyEvent.VK_LEFT:
                 case KeyEvent.VK_PAGE_UP:
-                    helpOverlay.scrollBy(key == KeyEvent.VK_PAGE_UP ? -6 : -1);
+                    helpOverlay.scrollBy(key == KeyEvent.VK_PAGE_UP ? -HelpOverlay.SCROLL_PAGE_LINES : -1);
                     repaint();
                     return;
                 case KeyEvent.VK_DOWN:
                 case KeyEvent.VK_RIGHT:
                 case KeyEvent.VK_PAGE_DOWN:
-                    helpOverlay.scrollBy(key == KeyEvent.VK_PAGE_DOWN ? 6 : 1);
+                    helpOverlay.scrollBy(key == KeyEvent.VK_PAGE_DOWN ? HelpOverlay.SCROLL_PAGE_LINES : 1);
                     repaint();
                     return;
                 case KeyEvent.VK_HOME:
@@ -363,6 +363,9 @@ public class GamePanel extends JPanel {
             if (world.getGameState() == World.GameState.PLAYING) {
                 hudRenderer.renderContextHint(g2, w, h, world);
                 hudRenderer.renderLockedMessage(g2, w, h, world);
+                if (world.getPlayer().hasCompass) {
+                    hudRenderer.renderCompassRose(g2, w, h, world);
+                }
                 if (mapHintRemainingMs > 0) {
                     hudRenderer.renderMapHint(g2, w);
                 }

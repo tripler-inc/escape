@@ -23,6 +23,10 @@ public class SoundPlayer {
     private static final byte[] KEY_PICKUP_PCM = buildPatternPcm(
             Config.SOUND.keyPickupFreqs, Config.SOUND.keyPickupDurationMs,
             Config.SOUND.keyPickupGapMs, Config.SOUND.keyPickupVolume);
+    private static final double[] COMPASS_PICKUP_FREQS = lowerFrequencies(Config.SOUND.keyPickupFreqs, 0.68);
+    private static final byte[] COMPASS_PICKUP_PCM = buildPatternPcm(
+            COMPASS_PICKUP_FREQS, Config.SOUND.keyPickupDurationMs,
+            Config.SOUND.keyPickupGapMs, Config.SOUND.keyPickupVolume * 0.6);
     private static final byte[] MAP_SHUFFLE_PCM = buildPaperShufflePcm(
             Config.SOUND.mapShuffleDurationMs,
             Config.SOUND.mapShuffleVolume,
@@ -72,6 +76,10 @@ public class SoundPlayer {
 
     public void playKeyPickup() {
         playSfxAsync(KEY_PICKUP_PCM);
+    }
+
+    public void playCompassPickup() {
+        playSfxAsync(COMPASS_PICKUP_PCM);
     }
 
     public void playCoinClink() {
@@ -144,6 +152,14 @@ public class SoundPlayer {
             sfxLine.open(FORMAT, Config.SOUND.lineBufferSize);
         }
         return sfxLine;
+    }
+
+    private static double[] lowerFrequencies(double[] frequenciesHz, double factor) {
+        double[] lowered = new double[frequenciesHz.length];
+        for (int i = 0; i < frequenciesHz.length; i++) {
+            lowered[i] = frequenciesHz[i] * factor;
+        }
+        return lowered;
     }
 
     private static byte[] buildPatternPcm(double[] frequenciesHz, int durationMs, int gapMs, double volume) {

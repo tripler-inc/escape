@@ -41,6 +41,8 @@ public class FirstPersonRenderer {
     private static final Color MAP_PAPER      = Config.FP.mapPaper;
     private static final Color MAP_FOLD       = Config.FP.mapFold;
     private static final Color MAP_INK        = Config.FP.mapInk;
+    private static final Color COMPASS_RING   = Config.FP.compassRing;
+    private static final Color COMPASS_NEEDLE = Config.FP.compassNeedle;
 
     /** Per-column wall distance, populated during the DDA pass. */
     private double[] zBuffer = new double[0];
@@ -188,6 +190,7 @@ public class FirstPersonRenderer {
             if (type != ItemType.COIN
                 && type != ItemType.MAP
                     && type != ItemType.KEY
+                    && type != ItemType.COMPASS
                     && type != ItemType.LADDER_UP
                     && type != ItemType.HOLE_DOWN) continue;
             Point  p  = entry.getKey();   // x = col, y = row
@@ -216,15 +219,16 @@ public class FirstPersonRenderer {
 
             ItemType type = ItemType.values()[(int) sp[3]];
             switch (type) {
-                case COIN:      drawCoinSprite  (g, width, height, screenX, transformY); break;
-                case MAP:       drawMapSprite   (g, width, height, screenX, transformY); break;
-                case KEY:       drawKeySprite   (g, width, height, screenX, transformY); break;
+                case COIN:      drawCoinSprite     (g, width, height, screenX, transformY); break;
+                case MAP:       drawMapSprite      (g, width, height, screenX, transformY); break;
+                case KEY:       drawKeySprite      (g, width, height, screenX, transformY); break;
+                case COMPASS:   drawCompassSprite  (g, width, height, screenX, transformY); break;
                 case LADDER_UP:
                     if (drawLadderSprite(g, width, height, screenX, transformY)) {
                         world.markCurrentFloorUpLadderSeen();
                     }
                     break;
-                case HOLE_DOWN: drawHoleSprite  (g, width, height, screenX, transformY); break;
+                case HOLE_DOWN: drawHoleSprite     (g, width, height, screenX, transformY); break;
                 default: break;
             }
         }
@@ -401,6 +405,34 @@ public class FirstPersonRenderer {
         boolean toothTip = nx >= 0.70 && nx <= 0.94 && ny >= 0.14 && ny <= 0.62;
         boolean toothMid = nx >= 0.38 && nx <= 0.58 && ny >= 0.14 && ny <= 0.42;
         return inBow || inShaft || toothTip || toothMid;
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // Compass: a compact dial with a north needle and cardinal ticks.
+    // Using a few primitive shapes keeps this cheap to render while still
+    // reading clearly at a distance.
+    // ─────────────────────────────────────────────────────────────────
+
+    private void drawCompassSprite(Graphics2D g, int width, int height,
+                                  int screenX, double transformY) {
+        int size = Math.max(4, (int) (height / transformY / 28));
+        int centerY = (int) (height / 2.0 + 0.58 * height / transformY);
+        int x = screenX;
+        int y = centerY;
+        int zIndex = Math.max(0, Math.min(width - 1, x));
+        if (transformY >= zBuffer[zIndex]) return;
+
+        g.setColor(COMPASS_RING);
+        g.drawOval(x - size, y - size, size * 2, size * 2);
+        g.drawLine(x, y - size, x, y - size / 2);
+        g.drawLine(x, y + size, x, y + size / 2);
+        g.drawLine(x - size, y, x - size / 2, y);
+        g.drawLine(x + size, y, x + size / 2, y);
+
+        g.setColor(COMPASS_NEEDLE);
+        g.drawLine(x, y, x, y - size);
+        g.drawLine(x, y, x + size / 2, y + size / 3);
+        g.drawLine(x, y, x - size / 4, y + size / 3);
     }
 
     // ─────────────────────────────────────────────────────────────────

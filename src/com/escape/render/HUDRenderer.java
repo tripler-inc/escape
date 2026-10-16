@@ -32,6 +32,11 @@ public class HUDRenderer {
         }
     }
 
+    public void renderCompassRose(Graphics2D g, int width, int height, World world) {
+        if (!world.getPlayer().hasCompass) return;
+        drawCompassRose(g, width - 76, 18, world.getPlayer());
+    }
+
     public void renderContextHint(Graphics2D g, int width, int height, World world) {
         Player player = world.getPlayer();
         ItemType cell = world.getCurrentFloor()
@@ -76,6 +81,31 @@ public class HUDRenderer {
         g.setFont(new Font("SansSerif", Font.BOLD, 18));
         g.setColor(Config.HUD.coinText);
         g.drawString("\u00d7 " + count, 40, 30);
+    }
+
+    // ── Compass rose (top-right, first-person HUD) ─────────────────
+
+    private void drawCompassRose(Graphics2D g, int x, int y, Player player) {
+        final int radius = 22;
+        final int cx = x + radius;
+        final int cy = y + radius;
+
+        g.setColor(Config.HUD.compassBg);
+        g.fillOval(cx - radius - 5, cy - radius - 5, (radius + 5) * 2, (radius + 5) * 2);
+        g.setColor(Config.HUD.compassRing);
+        g.drawOval(cx - radius, cy - radius, radius * 2, radius * 2);
+
+        g.drawLine(cx, cy - radius, cx, cy - radius + 5);
+        g.drawLine(cx, cy + radius, cx, cy + radius - 5);
+        g.drawLine(cx - radius, cy, cx - radius + 5, cy);
+        g.drawLine(cx + radius, cy, cx + radius - 5, cy);
+
+        g.setColor(Config.HUD.compassNeedle);
+        int needleX = (int) Math.round(Math.cos(player.angle) * (radius - 6));
+        int needleY = (int) Math.round(Math.sin(player.angle) * (radius - 6));
+        g.drawLine(cx, cy, cx + needleX, cy + needleY);
+        g.fillOval(cx + needleX - 3, cy + needleY - 3, 6, 6);
+        g.fillOval(cx - 3, cy - 3, 6, 6);
     }
 
     // ── Key icon (top-right) ─────────────────────────────────────────

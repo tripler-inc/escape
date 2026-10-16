@@ -84,12 +84,20 @@ public class World {
             floors[i+1].placeItem(ladders[i].y, ladders[i].x, ItemType.HOLE_DOWN);
         }
 
-        // ── Phase 3: place key on the first floor ────────────────────
+        // ── Phase 3: place key and compass on the first floor ────────
         List<Point> keyCells = shuffledRoomCells(rng, floors[0].getMaze());
         for (Point p : keyCells) {
             if (isReserved(p, 0)) continue;
             if (floors[0].hasItem(p.y, p.x)) continue;
             floors[0].placeItem(p.y, p.x, ItemType.KEY);
+            break;
+        }
+
+        List<Point> compassCells = shuffledRoomCells(rng, floors[0].getMaze());
+        for (Point p : compassCells) {
+            if (isReserved(p, 0)) continue;
+            if (floors[0].hasItem(p.y, p.x)) continue;
+            floors[0].placeItem(p.y, p.x, ItemType.COMPASS);
             break;
         }
 
@@ -310,6 +318,10 @@ public class World {
             score += KEY_SCORE;
             f.removeItem(row, col);
             soundPlayer.playKeyPickup();
+        } else if (item == ItemType.COMPASS) {
+            player.hasCompass = true;
+            f.removeItem(row, col);
+            soundPlayer.playCompassPickup();
         }
     }
 

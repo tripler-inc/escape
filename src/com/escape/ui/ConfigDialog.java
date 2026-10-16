@@ -4,8 +4,6 @@ import com.escape.Config;
 import com.escape.ApplicationRelauncher;
 
 import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;

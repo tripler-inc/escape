@@ -51,7 +51,7 @@ public class HelpOverlay {
     private static final int OUTER_MARGIN = Config.HELP.outerMargin;
     private static final int PANEL_PADDING_X = Config.HELP.panelPaddingX;
     private static final int PANEL_PADDING_Y = Config.HELP.panelPaddingY;
-    private static final int SCROLL_PAGE_LINES = 6;
+    public static final int SCROLL_PAGE_LINES = 6;
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\b[A-Z][A-Z0-9_]*\\b");
     private static final Map<String, String> PLACEHOLDER_VALUES = buildPlaceholderValues();
 

@@ -205,6 +205,8 @@ public final class Config {
         public final Color mapPaper;
         public final Color mapFold;
         public final Color mapInk;
+        public final Color compassRing;
+        public final Color compassNeedle;
         public final double cameraPlaneScale;
 
         private FirstPersonRendererSection() {
@@ -223,6 +225,8 @@ public final class Config {
             mapPaper          = getColor("FirstPersonRenderer", "COL_MAP_PAPER");
             mapFold           = getColor("FirstPersonRenderer", "COL_MAP_FOLD");
             mapInk            = getColor("FirstPersonRenderer", "COL_MAP_INK");
+            compassRing       = getColor("FirstPersonRenderer", "COL_COMPASS_RING");
+            compassNeedle     = getColor("FirstPersonRenderer", "COL_COMPASS_NEEDLE");
             cameraPlaneScale  = getDouble("FirstPersonRenderer", "CAMERA_PLANE_SCALE");
         }
     }
@@ -251,6 +255,9 @@ public final class Config {
         public final Color keyHole;
         public final Color keyShaft;
         public final Color keyShaftBorder;
+        public final Color compassBg;
+        public final Color compassRing;
+        public final Color compassNeedle;
         public final String hintUp;
         public final String hintDown;
         public final Font hintFont;
@@ -275,6 +282,9 @@ public final class Config {
             keyHole         = getColor("HUDRenderer", "COL_KEY_HOLE");
             keyShaft        = getColor("HUDRenderer", "COL_KEY_SHAFT");
             keyShaftBorder  = getColor("HUDRenderer", "COL_KEY_SHAFT_BRDR");
+            compassBg       = getColor("HUDRenderer", "COL_COMPASS_BG");
+            compassRing     = getColor("HUDRenderer", "COL_COMPASS_RING");
+            compassNeedle   = getColor("HUDRenderer", "COL_COMPASS_NEEDLE");
             hintUp          = getString("HUDRenderer", "HINT_UP");
             hintDown        = getString("HUDRenderer", "HINT_DOWN");
             hintFont        = getFont("HUDRenderer", "HINT_FONT");
